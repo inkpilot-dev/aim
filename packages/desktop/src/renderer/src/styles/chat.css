@@ -8,8 +8,9 @@
 }
 .message-scroll {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
   min-height: 0;
+  scrollbar-gutter: stable;
 }
 .message-col {
   max-width: var(--column-w);
@@ -298,6 +299,47 @@
 }
 .tool-group-body {
   gap: 6px;
+}
+
+/* A run of tool calls collapsed into one line ("Worked · 14 steps") */
+.activity {
+  margin: 8px 0;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+}
+.activity .act-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px 0 4px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+.activity .act-head:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.activity .act-head .tr-chev {
+  color: var(--text-faint);
+  transition: transform 120ms ease;
+}
+.activity.open .act-head .tr-chev {
+  transform: rotate(90deg);
+}
+.activity .act-failed {
+  color: var(--danger);
+}
+.activity .act-body {
+  margin-top: 4px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+.activity .act-body .tool-row:first-child {
+  margin-top: 2px;
+}
+.streaming-text .md > :last-child {
+  animation: fade-in 120ms ease;
 }
 .tool-group-body .tool-row {
   margin: 0;

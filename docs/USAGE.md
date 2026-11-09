@@ -94,3 +94,7 @@ If a tool fails or the CLI process stops mid-turn, A.I.M. retries with the error
 | `Esc` | Stop the current turn |
 
 Additional shortcuts are listed in the application's Settings.
+
+## Tool activity
+
+By default each run of tool calls inside a reply is collapsed into one line such as "Worked · 6 steps · 7.4s" (with a count of failed steps when any). Click the line to expand it, or use "Show work" in the top bar (also Settings → Chat → Show tool activity) to see every tool call inline. Replies type out smoothly as they stream.

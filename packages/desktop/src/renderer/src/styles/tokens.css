@@ -22,7 +22,8 @@
   --success: #3ec281;
   --user-bubble: #1c1c21;
   --code-bg: #121215;
-  --scrollbar: rgba(255, 255, 255, 0.14);
+  --scrollbar: rgba(255, 255, 255, 0.26);
+  --scrollbar-hover: rgba(255, 255, 255, 0.4);
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border);
   --focus: 0 0 0 2px rgba(26, 191, 176, 0.4);
@@ -67,7 +68,8 @@
   --on-accent: #ffffff;
   --user-bubble: #ededeb;
   --code-bg: #f3f3f1;
-  --scrollbar: rgba(0, 0, 0, 0.18);
+  --scrollbar: rgba(0, 0, 0, 0.22);
+  --scrollbar-hover: rgba(0, 0, 0, 0.36);
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border);
   --focus: 0 0 0 2px rgba(18, 140, 130, 0.3);

@@ -393,6 +393,9 @@ export function SettingsView() {
           <Row label="Show thinking" desc="Reveal the model's reasoning blocks in chats.">
             <Toggle value={s.showThinking} onChange={(v) => set('showThinking', v)} label="Show thinking" />
           </Row>
+          <Row label="Show tool activity" desc="Show every tool call in the conversation. Off collapses each run of work into a single line you can expand.">
+            <Toggle value={s.showToolActivity} onChange={(v) => set('showToolActivity', v)} label="Show tool activity" />
+          </Row>
           <Row label="Desktop cursor overlay" desc="Draw A.I.M.'s teal cursor on screen while it controls the mouse.">
             <Toggle value={s.desktopCursorOverlay} onChange={(v) => set('desktopCursorOverlay', v)} label="Desktop cursor overlay" />
           </Row>

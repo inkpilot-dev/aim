@@ -1,17 +1,65 @@
-import { memo, useState } from 'react';
-import type { AgentInfo, ContentBlock, Message } from '@aim/shared';
+import { memo, useState, type ReactNode } from 'react';
+import type { AgentInfo, ContentBlock, Message, ToolUseBlock } from '@aim/shared';
 import { formatCost, formatDurationShort, formatTokens } from '../lib/format';
+import { useSmoothText } from '../lib/useSmoothText';
 import { useStore } from '../state/store';
 import { Markdown } from './Markdown';
 import { ToolUseRow } from './ToolUseRow';
-import { ToolGroupRow, groupContent } from './ToolGroupRow';
+import { ToolGroupRow, groupContent, type RenderItem } from './ToolGroupRow';
 import { IconAlert, IconCheck, IconChevronRight, IconCopy, IconWrench } from './Icons';
 
 interface Props {
   message: Message;
   agents: AgentInfo[];
   showThinking: boolean;
+  /** Show every tool call; otherwise runs of tool work collapse into one line. */
+  showActivity: boolean;
   streaming: boolean;
+}
+
+/** Streamed text that types out smoothly. */
+function StreamingText({ text, live }: { text: string; live: boolean }) {
+  const shown = useSmoothText(text);
+  return (
+    <div className={live ? 'streaming-text' : undefined}>
+      <Markdown text={shown} />
+      {live ? <span className="cursor-blink" /> : null}
+    </div>
+  );
+}
+
+function toolBlocksOf(items: RenderItem[]): ToolUseBlock[] {
+  const out: ToolUseBlock[] = [];
+  for (const it of items) {
+    if (it.kind === 'group') out.push(...it.blocks);
+    else if (it.block.type === 'tool_use') out.push(it.block);
+  }
+  return out;
+}
+
+/** A run of tool calls / thinking / status blocks collapsed into a single "Worked · N steps" line. */
+function ActivityGroup({ items, live, children }: { items: RenderItem[]; live: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const tools = toolBlocksOf(items);
+  const steps = tools.length;
+  const failed = tools.filter((t) => t.result && !t.result.ok).length;
+  const pending = live && tools.some((t) => !t.result);
+  const ms = tools.reduce((n, t) => n + (t.result?.durationMs ?? 0), 0);
+  const label = pending ? 'Working' : 'Worked';
+  const parts = [`${steps} step${steps === 1 ? '' : 's'}`];
+  if (ms > 0 && !pending) parts.push(formatDurationShort(ms));
+  return (
+    <div className={`activity ${open ? 'open' : ''}`}>
+      <button className="act-head" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        {pending ? <span className="spinner" /> : <IconChevronRight className="tr-chev" size={14} />}
+        <span>
+          {label} · {parts.join(' · ')}
+        </span>
+        {failed ? <span className="act-failed">{failed} failed</span> : null}
+      </button>
+      {open ? <div className="act-body">{children}</div> : null}
+    </div>
+  );
 }
 
 function ThinkingRow({ text }: { text: string }) {
@@ -63,7 +111,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export const MessageItem = memo(function MessageItem({ message, agents, showThinking, streaming }: Props) {
+export const MessageItem = memo(function MessageItem({ message, agents, showThinking, showActivity, streaming }: Props) {
   const { state } = useStore();
   const agentName = (id?: string) => (id ? agents.find((a) => a.id === id)?.name : undefined);
 
@@ -118,35 +166,48 @@ export const MessageItem = memo(function MessageItem({ message, agents, showThin
         .join(' · ')
     : '';
 
+  const items = groupContent(message.content).filter((it) => it.kind === 'group' || (it.block && (it.block.type !== 'thinking' || showThinking)));
+  const renderItem = (item: RenderItem, i: number, isLast: boolean) => {
+    if (item.kind === 'group') return <ToolGroupRow key={`g${i}`} blocks={item.blocks} agentName={agentName(item.blocks[0]?.agentId)} />;
+    const b = item.block;
+    switch (b.type) {
+      case 'text':
+        return <StreamingText key={i} text={b.text} live={streaming && isLast} />;
+      case 'tool_use':
+        return <ToolUseRow key={b.id || i} block={b} agentName={agentName(b.agentId)} />;
+      case 'thinking':
+        return <ThinkingRow key={i} text={b.text} />;
+      case 'status':
+        return <StatusNotice key={i} text={b.text} />;
+      case 'image':
+        return <img key={i} className="msg-image" src={`data:${b.mediaType};base64,${b.dataBase64}`} alt={b.alt ?? 'image'} />;
+      default:
+        return null;
+    }
+  };
+  // Split into text and runs of "work" (tool calls, thinking, status) so the work can collapse to one line.
+  const segments: { kind: 'text' | 'work'; items: { item: RenderItem; index: number }[] }[] = [];
+  items.forEach((item, index) => {
+    const isWork = item.kind === 'group' || (item.block.type !== 'text' && item.block.type !== 'image');
+    const kind = isWork ? 'work' : 'text';
+    const last = segments[segments.length - 1];
+    if (last && last.kind === kind) last.items.push({ item, index });
+    else segments.push({ kind, items: [{ item, index }] });
+  });
+  const lastIndex = items.length - 1;
+
   return (
     <div className="turn assistant">
       <div className="prose">
         {author ? <div className="agent-label">{author}</div> : null}
-        {groupContent(message.content).map((item, i) => {
-          if (item.kind === 'group') {
-            return <ToolGroupRow key={`g${i}`} blocks={item.blocks} agentName={agentName(item.blocks[0]?.agentId)} />;
-          }
-          const b = item.block;
-          if (!b) return null;
-          switch (b.type) {
-            case 'text':
-              return (
-                <div key={i}>
-                  <Markdown text={b.text} />
-                  {streaming && i === lastIdx ? <span className="cursor-blink" /> : null}
-                </div>
-              );
-            case 'tool_use':
-              return <ToolUseRow key={b.id || i} block={b} agentName={agentName(b.agentId)} />;
-            case 'thinking':
-              return showThinking ? <ThinkingRow key={i} text={b.text} /> : null;
-            case 'status':
-              return <StatusNotice key={i} text={b.text} />;
-            case 'image':
-              return <img key={i} className="msg-image" src={`data:${b.mediaType};base64,${b.dataBase64}`} alt={b.alt ?? 'image'} />;
-            default:
-              return null;
-          }
+        {segments.map((seg, si) => {
+          if (seg.kind === 'text' || showActivity) return seg.items.map(({ item, index }) => renderItem(item, index, index === lastIndex));
+          const live = streaming && si === segments.length - 1;
+          return (
+            <ActivityGroup key={`a${si}`} items={seg.items.map((x) => x.item)} live={live}>
+              {seg.items.map(({ item, index }) => renderItem(item, index, false))}
+            </ActivityGroup>
+          );
         })}
         {streaming && message.content.length === 0 ? <span className="cursor-blink" /> : null}
       </div>

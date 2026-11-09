@@ -10,12 +10,13 @@ interface Props {
   questions: PendingQuestion[];
   notices: Notice[];
   showThinking: boolean;
+  showActivity: boolean;
   onAnswer: (requestId: string, answer: string) => void;
 }
 
 const NEAR_BOTTOM_PX = 80;
 
-export function MessageList({ chat, questions, notices, showThinking, onAnswer }: Props) {
+export function MessageList({ chat, questions, notices, showThinking, showActivity, onAnswer }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(true); // following the bottom
   const [showJump, setShowJump] = useState(false);
@@ -64,6 +65,7 @@ export function MessageList({ chat, questions, notices, showThinking, onAnswer }
               message={m}
               agents={chat.agents}
               showThinking={showThinking}
+              showActivity={showActivity}
               streaming={streaming && i === chat.messages.length - 1 && m.role === 'assistant'}
             />
           ))}

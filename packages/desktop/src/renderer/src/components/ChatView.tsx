@@ -6,7 +6,7 @@ import { AgentsPanel } from './AgentsPanel';
 import { MessageList } from './MessageList';
 import { Composer } from './Composer';
 import { AimMark } from './AimMark';
-import { IconChevronDown, IconFolder, IconGlobe, IconMonitor, IconPanelLeft, IconTarget } from './Icons';
+import { IconChevronDown, IconEye, IconFolder, IconGlobe, IconMonitor, IconPanelLeft, IconTarget } from './Icons';
 
 const STATUS_TEXT: Partial<Record<ChatStatus, string>> = {
   thinking: 'Thinking…',
@@ -29,7 +29,7 @@ function greeting(name?: string): string {
 }
 
 export function ChatView() {
-  const { state, send, stop, answer, renameChat, toggleAgents, toggleSidebar, setView, toast } = useStore();
+  const { state, send, stop, answer, renameChat, toggleAgents, toggleSidebar, setView, toast, updateSettings } = useStore();
   const chat = state.current;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -39,6 +39,7 @@ export function ChatView() {
   }, [chat?.id]);
 
   const showThinking = state.settings?.showThinking ?? false;
+  const showActivity = state.settings?.showToolActivity ?? false;
   const status: ChatStatus = chat?.status ?? 'idle';
   const busy = status === 'thinking' || status === 'working';
   const progress = chat?.progress;
@@ -107,6 +108,15 @@ export function ChatView() {
         {chat && !isEmpty ? (
           <div className="tb-right">
             {statusText ? <span className="tb-status truncate">{statusText}</span> : null}
+            <button
+              className="tb-toggle"
+              onClick={() => void updateSettings({ showToolActivity: !showActivity })}
+              title={showActivity ? 'Collapse tool activity into one line per step' : 'Show every tool call'}
+              aria-pressed={showActivity}
+            >
+              <IconEye size={14} />
+              {showActivity ? 'Hide work' : 'Show work'}
+            </button>
             {chat.agents.length ? (
               <button className={`tb-agents ${state.agentsPanelOpen ? 'open' : ''}`} onClick={toggleAgents} aria-expanded={state.agentsPanelOpen}>
                 {runningAgents ? `${runningAgents} of ${chat.agents.length} agents working` : `${chat.agents.length} agent${chat.agents.length === 1 ? '' : 's'}`}
@@ -149,7 +159,7 @@ export function ChatView() {
         </div>
       ) : (
         <>
-          <MessageList chat={chat} questions={state.questions.filter((q) => q.chatId === chat.id)} notices={state.notices} showThinking={showThinking} onAnswer={(id, a) => void answer(id, a)} />
+          <MessageList chat={chat} questions={state.questions.filter((q) => q.chatId === chat.id)} notices={state.notices} showThinking={showThinking} showActivity={showActivity} onAnswer={(id, a) => void answer(id, a)} />
           {composer('docked')}
         </>
       )}
