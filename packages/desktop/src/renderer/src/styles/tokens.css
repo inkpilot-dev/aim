@@ -1,0 +1,75 @@
+/* Design tokens. Palette: near-black surfaces with a teal accent (mirrors COLORS in @aim/shared). */
+:root {
+  --bg: #0f0f11;
+  --bg-sidebar: #0a0a0b;
+  --surface: #151518;
+  --surface-2: #1b1b20;
+  --surface-3: #222228;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #ececef;
+  --text-muted: #9d9da8;
+  --text-faint: #6e6e79;
+  --accent: #1abfb0;
+  --accent-hover: #2ee6d6;
+  --accent-dim: #128c82;
+  --accent-soft: rgba(26, 191, 176, 0.14);
+  --on-accent: #06201d;
+  --danger: #e5484d;
+  --danger-soft: rgba(229, 72, 77, 0.12);
+  --warning: #e0a52a;
+  --warning-soft: rgba(224, 165, 42, 0.12);
+  --success: #3ec281;
+  --user-bubble: #1c1c21;
+  --code-bg: #121215;
+  --scrollbar: rgba(255, 255, 255, 0.14);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border);
+  --focus: 0 0 0 2px rgba(26, 191, 176, 0.4);
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --titlebar-h: 36px;
+  --sidebar-w: 280px;
+  --column-w: 760px;
+
+  --font: Inter, 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Source Serif 4', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --mono: 'Cascadia Code', 'JetBrains Mono', Consolas, 'SF Mono', Menlo, monospace;
+
+  --fs-xs: 11.5px;
+  --fs-sm: 13px;
+  --fs-md: 14.5px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-prose: 16.5px;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #fbfbfa;
+  --bg-sidebar: #f3f3f1;
+  --surface: #ffffff;
+  --surface-2: #f1f1ef;
+  --surface-3: #e8e8e5;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text: #1c1c1e;
+  --text-muted: #666670;
+  --text-faint: #8e8e99;
+  --accent: #128c82;
+  --accent-hover: #1abfb0;
+  --accent-dim: #0f6f67;
+  --accent-soft: rgba(18, 140, 130, 0.1);
+  --on-accent: #ffffff;
+  --user-bubble: #ededeb;
+  --code-bg: #f3f3f1;
+  --scrollbar: rgba(0, 0, 0, 0.18);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border);
+  --focus: 0 0 0 2px rgba(18, 140, 130, 0.3);
+  color-scheme: light;
+}

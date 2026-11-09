@@ -1,0 +1,89 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: "0"
+
+jobs:
+  check:
+    name: Build and test (ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # version comes from "packageManager" in package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install native build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential python3 libxtst-dev libpng++-dev libx11-dev libxkbfile-dev
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate icons
+        run: node scripts/generate-icons.mjs
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Upload extension bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: aim-extension
+          path: packages/extension/dist
+          if-no-files-found: warn
+
+  windows-installer:
+    name: Windows installer
+    runs-on: windows-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate icons
+        run: node scripts/generate-icons.mjs
+
+      - name: Build and package (NSIS installer + portable)
+        run: pnpm dist:win -- --publish never
+        env:
+          # Unsigned build: do not attempt code signing. Publishing is done by release.yml on tags.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIM-windows
+          path: |
+            packages/desktop/release/AIM-Setup-*.exe
+            packages/desktop/release/AIM-Portable-*.exe
+            packages/desktop/release/*.blockmap
+          if-no-files-found: error

@@ -1,0 +1,89 @@
+name: Release
+
+# Publishes installers and auto-update metadata to GitHub Releases whenever a version tag is pushed.
+# Create one with: scripts/release.sh 0.2.0   (or scripts/release.ps1 0.2.0)
+# The tag must match the version in packages/desktop/package.json.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Windows installer (publish)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG=$(node -p "require('./packages/desktop/package.json').version")
+          if [ "$TAG" != "$PKG" ]; then echo "Tag v$TAG does not match packages/desktop version $PKG"; exit 1; fi
+
+      - name: Generate icons
+        run: node scripts/generate-icons.mjs
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Package and publish (NSIS + portable + latest.yml)
+        run: pnpm --filter @aim/desktop exec electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+  linux:
+    name: Linux AppImage (publish)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install native build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential python3 libxtst-dev libpng++-dev libx11-dev libxkbfile-dev
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate icons
+        run: node scripts/generate-icons.mjs
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Package and publish (AppImage + latest-linux.yml)
+        run: pnpm --filter @aim/desktop exec electron-builder --linux AppImage --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

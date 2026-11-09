@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+release/
+*.tsbuildinfo
+.DS_Store
+*.log
+.env
+coverage/
+packages/desktop/release/
+packages/extension/dist/

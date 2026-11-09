@@ -1,0 +1,118 @@
+# electron-builder configuration for A.I.M. (packages/desktop).
+# Invoked by `pnpm --filter @aim/desktop dist` / `dist:win` after `electron-vite build`.
+# Icons come from `node scripts/generate-icons.mjs` (repo root), which copies icon.ico and icon.png into build/.
+
+appId: com.aim.desktop
+productName: A.I.M.
+copyright: Copyright © 2026 A.I.M. contributors. Released under the MIT License.
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**
+  - package.json
+  - "!**/*.map"
+
+asar: true
+
+# The MCP proxy (@aim/tools-mcp) is launched by the Claude CLI as a separate Node process
+# (Electron with ELECTRON_RUN_AS_NODE=1), so its code and every module it imports must be
+# readable from disk, not from inside the asar. Native modules are unpacked for the same reason.
+asarUnpack:
+  - node_modules/@nut-tree-fork/**
+  - node_modules/better-sqlite3/**
+  - node_modules/bindings/**
+  - node_modules/file-uri-to-path/**
+  - node_modules/@aim/tools-mcp/**
+  - node_modules/@aim/shared/**
+  - node_modules/@modelcontextprotocol/**
+  - node_modules/ws/**
+  - node_modules/zod/**
+  # transitive imports of @modelcontextprotocol/sdk (server/index, server/mcp, server/stdio, shared/*)
+  - node_modules/zod-to-json-schema/**
+  - node_modules/content-type/**
+  - node_modules/ajv/**
+  - node_modules/ajv-formats/**
+  - node_modules/fast-deep-equal/**
+  - node_modules/fast-uri/**
+  - node_modules/json-schema-traverse/**
+  - node_modules/require-from-string/**
+  - node_modules/json-schema-typed/**
+
+# Packaged layout: <resources>/extension (unpacked MV3 extension), <resources>/assets/icons (tray + app icons).
+# At runtime: path.join(process.resourcesPath, 'extension') and path.join(process.resourcesPath, "assets", "icons", "tray.png").
+extraResources:
+  - from: ../extension/dist
+    to: extension
+  - from: ../../assets/icons
+    to: assets/icons
+  - from: ../../docs
+    to: docs
+    filter:
+      - "*.md"
+
+npmRebuild: true
+
+# Self-update: artefacts (installer, latest.yml, blockmaps) are attached to a GitHub Release.
+# owner/repo are inferred from the git remote (or package.json "repository"); the release
+# workflow runs `electron-builder --publish always` with GH_TOKEN. Builds without GH_TOKEN
+# simply skip publishing. Releases are created as real releases (not drafts) so electron-updater sees them.
+publish:
+  provider: github
+  releaseType: release
+
+win:
+  target:
+    - nsis
+    - portable
+  icon: build/icon.ico
+  requestedExecutionLevel: asInvoker
+  # Default artifact name for any additional Windows target; nsis and portable override it below
+  # so the installer and the portable executable do not collide on the same file name.
+  artifactName: AIM-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: A.I.M.
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  license: ../../LICENSE
+  artifactName: AIM-Setup-${version}.${ext}
+
+portable:
+  artifactName: AIM-Portable-${version}.${ext}
+
+mac:
+  target:
+    - dmg
+  category: public.app-category.productivity
+  icon: build/icon.png
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  extendInfo:
+    NSScreenCaptureUsageDescription: A.I.M. captures the screen to see what it is working on.
+    NSAccessibilityUsageDescription: A.I.M. controls the mouse and keyboard to carry out tasks you delegate.
+    NSAppleEventsUsageDescription: A.I.M. launches and focuses applications on your behalf.
+
+dmg:
+  artifactName: AIM-${version}-${arch}.${ext}
+
+executableName: AIM
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: build/icon.png
+  category: Utility
+  maintainer: A.I.M. contributors <noreply@aim.invalid>
+  synopsis: Artificial Intelligence Management — a desktop AI agent driven by the Claude Code CLI
+  artifactName: AIM-${version}-${arch}.${ext}

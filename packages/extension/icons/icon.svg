@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- A.I.M. Browser Bridge icon: black rounded square, teal arrow cursor with a white outline. -->
+  <rect x="0" y="0" width="128" height="128" rx="28" ry="28" fill="#0B0B0D"/>
+  <path d="M40 24 L40 96 L58 80 L71 108 L85 101 L72 74 L96 74 Z"
+        fill="#1ABFB0" stroke="#FFFFFF" stroke-width="7" stroke-linejoin="round"/>
+</svg>

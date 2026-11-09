@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A.I.M. Browser Bridge</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="head">
+      <div class="brand">
+        <img src="icons/icon32.png" alt="" width="22" height="22" />
+        <div>
+          <div class="title">A.I.M. Browser Bridge</div>
+          <div class="sub" id="browser">Detecting browser…</div>
+        </div>
+      </div>
+      <div class="status" id="status" data-state="connecting">
+        <span class="dot"></span>
+        <span id="statusText">Checking…</span>
+      </div>
+    </header>
+
+    <p class="reason" id="reason"></p>
+
+    <section class="card">
+      <label class="field">
+        <span>Hub port</span>
+        <input id="port" type="number" min="1" max="65535" inputmode="numeric" placeholder="47821" />
+      </label>
+      <label class="field">
+        <span>Pairing token</span>
+        <span class="tokenRow">
+          <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste the token from A.I.M. Settings" />
+          <button type="button" class="ghost" id="toggleToken" aria-label="Show token">Show</button>
+        </span>
+      </label>
+      <div class="actions">
+        <button type="button" class="primary" id="save">Save and connect</button>
+        <button type="button" id="test">Test connection</button>
+      </div>
+      <p class="result" id="testResult" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card row">
+      <div>
+        <div class="label">Tabs opened by A.I.M.</div>
+        <div class="big" id="aimTabs">0</div>
+      </div>
+      <button type="button" id="closeTabs">Close A.I.M.'s tabs</button>
+    </section>
+
+    <footer class="foot">
+      <span id="version"></span>
+      <span>Communicates only with 127.0.0.1</span>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>A.I.M. Fixture Shop</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; }
+    nav { background: #eee; padding: 8px; }
+    main { padding: 16px; }
+    .hidden { display: none; }
+    #tall { height: 1600px; background: linear-gradient(#fff, #ddd); }
+  </style>
+</head>
+<body>
+  <nav aria-label="Site">
+    <a href="/">Home</a>
+    <a href="/products">Products</a>
+    <a href="/help" target="_blank">Help</a>
+  </nav>
+  <main>
+    <h1>Fixture Shop</h1>
+    <p id="intro">Welcome to the fixture shop. This page exists so the A.I.M. Browser Bridge can be exercised end to end. It contains a search form, a newsletter form, a payment form that must never be operated, and a very tall block for scrolling.</p>
+
+    <form id="search" action="/search" onsubmit="event.preventDefault(); document.getElementById('searchResult').textContent = 'Searched for: ' + this.q.value;">
+      <label for="q">Search products</label>
+      <input id="q" name="q" type="search" placeholder="Search" />
+      <button type="submit" id="searchBtn">Search</button>
+    </form>
+    <p id="searchResult" aria-live="polite"></p>
+
+    <form id="newsletter" onsubmit="event.preventDefault(); document.getElementById('newsResult').textContent = 'Subscribed: ' + this.email.value;">
+      <label>Email address <input name="email" type="email" id="email" /></label>
+      <label>Country
+        <select id="country" name="country">
+          <option value="">Choose…</option>
+          <option value="de">Germany</option>
+          <option value="fr">France</option>
+          <option value="gb">United Kingdom</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="terms" name="terms" /> I accept the terms</label>
+    </form>
+    <p id="newsResult"></p>
+
+    <section aria-label="Payment">
+      <h2>Payment</h2>
+      <label for="cc">Card number</label>
+      <input id="cc" name="card" autocomplete="cc-number" inputmode="numeric" />
+      <button type="button" id="pay" onclick="document.getElementById('payResult').textContent = 'PAYMENT EXECUTED'">Pay now</button>
+      <p id="payResult"></p>
+    </section>
+
+    <button type="button" id="counterBtn" onclick="this.dataset.count = (Number(this.dataset.count||0)+1); document.getElementById('count').textContent = this.dataset.count">Increment</button>
+    <span id="count">0</span>
+
+    <div id="editor" contenteditable="true" aria-label="Notes" style="border:1px solid #999; min-height: 24px;"></div>
+
+    <input type="password" id="pw" value="hunter2" aria-label="Password" />
+    <a id="late-link" class="hidden" href="/late">Appears later</a>
+    <div id="tall"></div>
+    <a id="bottom" href="#top">Back to top</a>
+    <button id="navigateBtn" type="button" onclick="location.href = '/second.html'">Go to second page</button>
+  </main>
+  <footer>Footer text that should be stripped from readable text.</footer>
+  <script>
+    setTimeout(() => { document.getElementById('late-link').classList.remove('hidden'); }, 1200);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.getElementById('intro').dataset.escaped = '1'; });
+  </script>
+</body>
+</html>

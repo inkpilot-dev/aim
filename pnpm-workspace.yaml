@@ -1,0 +1,11 @@
+packages:
+  - packages/*
+onlyBuiltDependencies:
+  - electron
+  - better-sqlite3
+  - "@nut-tree-fork/libnut"
+  - "@nut-tree-fork/libnut-win32"
+  - "@nut-tree-fork/libnut-darwin"
+  - "@nut-tree-fork/libnut-linux"
+  - sharp
+  - esbuild
