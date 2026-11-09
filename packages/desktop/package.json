@@ -2,7 +2,12 @@
   "name": "@aim/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "A.I.M. — Artificial Intelligence Management",
+  "description": "A.I.M. \u2014 Artificial Intelligence Management",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/inkpilot-dev/aim.git"
+  },
+  "homepage": "https://github.com/inkpilot-dev/aim",
   "author": "A.I.M.",
   "main": "./out/main/index.js",
   "scripts": {

@@ -72,8 +72,11 @@ jobs:
       - name: Generate icons
         run: node scripts/generate-icons.mjs
 
-      - name: Build and package (NSIS installer + portable)
-        run: pnpm dist:win -- --publish never
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Package (NSIS installer + portable, no publish)
+        run: pnpm --filter @aim/desktop exec electron-builder --win --publish never
         env:
           # Unsigned build: do not attempt code signing. Publishing is done by release.yml on tags.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
