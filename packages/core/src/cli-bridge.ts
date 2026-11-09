@@ -397,7 +397,10 @@ export class ClaudeCliBridge implements OneShotRunner {
 
     for (const c of candidates) {
       const isBare = c === 'claude';
-      if (!isBare) {
+      // The explicit setting may be a command line such as "node wrapper.js" (see resolveCommand), which is
+      // not a file on disk; always try it. Auto-detected candidates must exist as files.
+      const isExplicit = !!explicitPath?.trim() && c === explicitPath.trim();
+      if (!isBare && !isExplicit) {
         try {
           if (!fs.statSync(c).isFile()) continue;
         } catch {

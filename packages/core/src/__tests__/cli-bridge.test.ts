@@ -174,6 +174,7 @@ describe('ClaudeCliBridge', () => {
   it('detect() finds an explicit path and reports the version', async () => {
     const health = await ClaudeCliBridge.detect(`${process.execPath} ${FAKE_CLI}`);
     expect(health.found).toBe(true);
+    expect(health.path).toBe(`${process.execPath} ${FAKE_CLI}`);
     expect(health.version).toBe('2.1.319');
     expect(typeof health.authenticated).toBe('boolean');
     const missing = await ClaudeCliBridge.detect('/nope/claude');

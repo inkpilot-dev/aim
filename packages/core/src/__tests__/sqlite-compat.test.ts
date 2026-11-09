@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { openDatabase } from '../db.js';
@@ -44,9 +45,18 @@ describe('sqlite fallback driver (node:sqlite)', () => {
       fs.rmSync(dir, { recursive: true, force: true });
     }
   });
-  it('prefers better-sqlite3 when it loads', () => {
+  it('prefers better-sqlite3 when it loads, otherwise falls back', () => {
+    // In CI the native module may be compiled for Electron's ABI (postinstall), so Node cannot load it;
+    // the fallback is then the expected outcome.
+    let nativeLoads = true;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      createRequire(import.meta.url)('better-sqlite3');
+    } catch {
+      nativeLoads = false;
+    }
     const db = openSqlite(':memory:');
-    expect(sqliteDriver()).toBe('better-sqlite3');
+    expect(sqliteDriver()).toBe(nativeLoads ? 'better-sqlite3' : 'node:sqlite');
     db.close();
   });
 });
