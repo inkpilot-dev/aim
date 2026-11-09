@@ -48,10 +48,12 @@ describe('sqlite fallback driver (node:sqlite)', () => {
   it('prefers better-sqlite3 when it loads, otherwise falls back', () => {
     // In CI the native module may be compiled for Electron's ABI (postinstall), so Node cannot load it;
     // the fallback is then the expected outcome.
+    // Requiring the package succeeds even when the binary is wrong; only instantiation loads the .node file.
     let nativeLoads = true;
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      createRequire(import.meta.url)('better-sqlite3');
+      const Better = createRequire(import.meta.url)('better-sqlite3') as new (p: string) => { close(): void };
+      new Better(':memory:').close();
     } catch {
       nativeLoads = false;
     }
