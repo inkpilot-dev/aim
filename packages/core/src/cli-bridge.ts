@@ -422,6 +422,12 @@ export class ClaudeCliBridge implements OneShotRunner {
 
   private spawnCli(args: string[], opts: CliRunOptions): ChildProcess {
     const cmd = resolveCommand(this.cliPath, this.argvPrefix);
+    // A configured path (as opposed to a bare command name resolved through PATH) must exist. Checking up
+    // front gives the same clear error on every platform; on Windows a shell spawn of a missing file would
+    // otherwise just exit 1 with "The system cannot find the path specified".
+    if (cmd.prefix.length === 0 && (path.isAbsolute(cmd.file) || cmd.file.includes(path.sep)) && !fs.existsSync(cmd.file)) {
+      throw new Error(`${cmd.file} does not exist`);
+    }
     const fullArgs = [...cmd.prefix, ...args];
     const env: NodeJS.ProcessEnv = { ...process.env, ...(opts.env ?? {}) };
     // Keep the CLI from trying to open a browser / IDE and avoid nested-session confusion.
