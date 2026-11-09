@@ -2,23 +2,26 @@
   "name": "aim",
   "version": "0.1.0",
   "private": true,
-  "description": "A.I.M. — Artificial Intelligence Management. A self-directed desktop AI agent wired to the Claude Code CLI.",
+  "description": "A.I.M. \u2014 Artificial Intelligence Management. A self-directed desktop AI agent wired to the Claude Code CLI.",
   "packageManager": "pnpm@10.0.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "build": "pnpm -r --filter ./packages/shared --filter ./packages/core --filter ./packages/tools-mcp --filter ./packages/extension --filter ./packages/desktop run build",
+    "build": "node scripts/ensure-electron.mjs && pnpm -r --filter ./packages/shared --filter ./packages/core --filter ./packages/tools-mcp --filter ./packages/extension --filter ./packages/desktop run build",
     "build:shared": "pnpm --filter @aim/shared build",
     "build:core": "pnpm --filter @aim/core build",
     "build:tools-mcp": "pnpm --filter @aim/tools-mcp build",
     "build:extension": "pnpm --filter @aim/extension build",
     "build:desktop": "pnpm --filter @aim/desktop build",
-    "dev": "pnpm --filter @aim/desktop dev",
+    "dev": "node scripts/ensure-electron.mjs && pnpm --filter @aim/desktop dev",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
     "icons": "node scripts/generate-icons.mjs",
     "dist": "pnpm build && pnpm --filter @aim/desktop dist",
-    "dist:win": "pnpm build && pnpm --filter @aim/desktop dist:win"
+    "dist:win": "pnpm build && pnpm --filter @aim/desktop dist:win",
+    "ensure-electron": "node scripts/ensure-electron.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

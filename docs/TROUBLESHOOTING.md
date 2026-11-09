@@ -90,3 +90,7 @@ Attach the following when reporting a problem: the A.I.M. version (Settings → 
 ## Updates
 
 See [UPDATES.md](UPDATES.md) for the update flow and its error messages. In short: updates only apply to installed releases (not `pnpm dev`), the repository must contain a release produced by the Release workflow, and private repositories need a token in Settings → Updates.
+
+## "Error: Electron uninstall" when starting `pnpm dev`
+
+pnpm 10 and newer block package install scripts unless they are approved, so the `electron` package can be present without its downloaded executable. `pnpm dev` and `pnpm build` now run `scripts/ensure-electron.mjs`, which downloads it when missing. To do it by hand: `node node_modules/electron/install.js`, or run `pnpm approve-builds`, select `electron`, `better-sqlite3` and `@nut-tree-fork/libnut-win32`, then `pnpm install` again.
