@@ -97,4 +97,4 @@ Additional shortcuts are listed in the application's Settings.
 
 ## Tool activity
 
-By default each run of tool calls inside a reply is collapsed into one line such as "Worked · 6 steps · 7.4s" (with a count of failed steps when any). Click the line to expand it, or use "Show work" in the top bar (also Settings → Chat → Show tool activity) to see every tool call inline. Replies type out smoothly as they stream.
+By default each run of tool calls inside a reply is collapsed into one line such as "Worked · 6 steps · 7.4s" (with a count of failed steps when any). Click the line to expand it, or use "Show work" in the top bar to see every tool call inline. Settings → Tool activity offers three modes: one line per run (default), show every call, or hide completely (only a small "Working" indicator while A.I.M. is busy). Replies type out smoothly as they stream.

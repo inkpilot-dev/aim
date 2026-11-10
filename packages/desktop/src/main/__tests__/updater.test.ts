@@ -64,16 +64,29 @@ describe('parseRepo', () => {
 describe('UpdateService', () => {
   it('reports unsupported in development builds', async () => {
     const statuses: UpdateStatus[] = [];
-    const svc = new UpdateService({ settings: settingsWith({}), isPackaged: false, currentVersion: '0.1.0', onStatus: (s) => statuses.push(s), log, loadUpdater: () => fakeUpdater().u });
+    const svc = new UpdateService({ settings: settingsWith({}), isPackaged: false, currentVersion: '0.1.0', onStatus: (s) => statuses.push(s), log, loadUpdater: () => fakeUpdater().u, fetchJson: async () => { throw new Error('offline'); } });
     expect(svc.getStatus().state).toBe('unsupported');
     const r = await svc.check();
     expect(r.state).toBe('unsupported');
-    expect(r.message).toMatch(/packaged/);
+    expect(r.message).toMatch(/source/i);
   });
 
-  it('is disabled without a repository and when turned off', async () => {
+  it('source builds point at a newer installer on GitHub', async () => {
+    const svc = new UpdateService({ settings: settingsWith({}), isPackaged: false, currentVersion: '0.1.0', onStatus: () => undefined, log, loadUpdater: () => fakeUpdater().u, fetchJson: async () => ({ tag_name: 'v0.1.4', html_url: 'https://github.com/inkpilot-dev/aim/releases/tag/v0.1.4', body: 'Fixes' }) });
+    const r = await svc.check();
+    expect(r.state).toBe('available');
+    expect(r.manual).toBe(true);
+    expect(r.latestVersion).toBe('0.1.4');
+    expect(r.releaseUrl).toContain('v0.1.4');
+    const same = new UpdateService({ settings: settingsWith({}), isPackaged: false, currentVersion: '0.1.4', onStatus: () => undefined, log, loadUpdater: () => fakeUpdater().u, fetchJson: async () => ({ tag_name: 'v0.1.4' }) });
+    expect((await same.check()).state).toBe('unsupported');
+  });
+
+  it('falls back to the default repository and is disabled when turned off', async () => {
     const svc = new UpdateService({ settings: settingsWith({ updatesRepo: '' }), isPackaged: true, currentVersion: '0.1.0', onStatus: () => undefined, log, loadUpdater: () => fakeUpdater().u });
-    expect((await svc.check()).state).toBe('disabled');
+    const r = await svc.check();
+    expect(r.repo).toBe('inkpilot-dev/aim');
+    expect(r.state).toBe('not_available');
     const off = new UpdateService({ settings: settingsWith({ updatesEnabled: false, updatesRepo: 'acme/aim' }), isPackaged: true, currentVersion: '0.1.0', onStatus: () => undefined, log, loadUpdater: () => fakeUpdater().u });
     expect((await off.check()).state).toBe('disabled');
   });

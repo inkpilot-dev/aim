@@ -39,7 +39,8 @@ export function ChatView() {
   }, [chat?.id]);
 
   const showThinking = state.settings?.showThinking ?? false;
-  const showActivity = state.settings?.showToolActivity ?? false;
+  const activityMode = state.settings?.toolActivity ?? 'collapsed';
+  const showActivity = activityMode === 'show';
   const status: ChatStatus = chat?.status ?? 'idle';
   const busy = status === 'thinking' || status === 'working';
   const progress = chat?.progress;
@@ -110,7 +111,7 @@ export function ChatView() {
             {statusText ? <span className="tb-status truncate">{statusText}</span> : null}
             <button
               className="tb-toggle"
-              onClick={() => void updateSettings({ showToolActivity: !showActivity })}
+              onClick={() => void updateSettings({ toolActivity: showActivity ? 'collapsed' : 'show' })}
               title={showActivity ? 'Collapse tool activity into one line per step' : 'Show every tool call'}
               aria-pressed={showActivity}
             >
@@ -159,7 +160,7 @@ export function ChatView() {
         </div>
       ) : (
         <>
-          <MessageList chat={chat} questions={state.questions.filter((q) => q.chatId === chat.id)} notices={state.notices} showThinking={showThinking} showActivity={showActivity} onAnswer={(id, a) => void answer(id, a)} />
+          <MessageList chat={chat} questions={state.questions.filter((q) => q.chatId === chat.id)} notices={state.notices} showThinking={showThinking} activityMode={activityMode} onAnswer={(id, a) => void answer(id, a)} />
           {composer('docked')}
         </>
       )}

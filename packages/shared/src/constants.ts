@@ -36,6 +36,10 @@ export const ENV_CHAT_ID = 'AIM_CHAT_ID';
 /** Name of the MCP server as Claude sees it. Tool names become `mcp__aim__<tool>`. */
 export const MCP_SERVER_NAME = 'aim';
 
+/** GitHub repository that hosts releases (owner/repo); overridable in Settings. */
+export const DEFAULT_UPDATE_REPO = 'inkpilot-dev/aim';
+export const RELEASES_URL = `https://github.com/${DEFAULT_UPDATE_REPO}/releases/latest`;
+
 /** Global shortcut to toggle the main window. */
 export const DEFAULT_TOGGLE_SHORTCUT = 'CommandOrControl+Shift+A';
 

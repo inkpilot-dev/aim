@@ -40,8 +40,8 @@ export interface Settings {
   additionalDirs: string[];
   /** Show thinking blocks in the chat. */
   showThinking: boolean;
-  /** Show every tool call inline. When false, each run of tool calls collapses into one "Worked · N steps" line. */
-  showToolActivity: boolean;
+  /** How tool activity appears in replies: every call, one collapsed line per run, or nothing at all. */
+  toolActivity: 'show' | 'collapsed' | 'hidden';
   /** Self-update from GitHub Releases (electron-updater). */
   updatesEnabled: boolean;
   /** Download new versions automatically (install happens on quit or on demand). */
@@ -83,7 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   preferredBrowser: '',
   additionalDirs: [],
   showThinking: false,
-  showToolActivity: false,
+  toolActivity: 'collapsed',
   updatesEnabled: true,
   updatesAutoDownload: true,
   updatesRepo: '',

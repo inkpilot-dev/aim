@@ -90,7 +90,7 @@ function UpdatesGroup({ s, set }: { s: Settings; set: <K extends keyof Settings>
     if (!u) return 'Checking status…';
     switch (u.state) {
       case 'unsupported':
-        return 'Development build — updates apply to installed releases only.';
+        return u.message ?? 'Running from source — automatic updates apply to the installed app.';
       case 'disabled':
         return u.message ?? 'Updates are off.';
       case 'idle':
@@ -98,7 +98,7 @@ function UpdatesGroup({ s, set }: { s: Settings; set: <K extends keyof Settings>
       case 'checking':
         return 'Checking GitHub Releases…';
       case 'available':
-        return `Version ${u.latestVersion ?? ''} is available.`;
+        return u.manual ? `Version ${u.latestVersion ?? ''} is available. Download the installer to switch to automatic updates.` : `Version ${u.latestVersion ?? ''} is available.`;
       case 'not_available':
         return `You are on the latest version${u.checkedAt ? ` (checked ${new Date(u.checkedAt).toLocaleTimeString()})` : ''}.`;
       case 'downloading':
@@ -130,10 +130,15 @@ function UpdatesGroup({ s, set }: { s: Settings; set: <K extends keyof Settings>
         ) : null}
         {u?.releaseNotes && (u.state === 'available' || u.state === 'downloaded' || u.state === 'downloading') ? <pre className="release-notes selectable">{u.releaseNotes}</pre> : null}
         <div className="row" style={{ gap: 8 }}>
-          <button className="btn sm" disabled={busy || u?.state === 'unsupported' || u?.state === 'checking' || u?.state === 'downloading'} onClick={() => void run(() => window.aim.checkForUpdates())}>
+          <button className="btn sm" disabled={busy || u?.state === 'checking' || u?.state === 'downloading'} onClick={() => void run(() => window.aim.checkForUpdates())}>
             <IconRefresh size={13} /> Check now
           </button>
-          {u?.state === 'available' ? (
+          {u?.releaseUrl && (u.state === 'available' || u.state === 'unsupported') ? (
+            <button className="btn sm primary" onClick={() => void window.aim.openExternal(u.releaseUrl!)}>
+              <IconExternal size={13} /> {u.state === 'available' ? `Download installer ${u.latestVersion ?? ''}` : 'Open releases page'}
+            </button>
+          ) : null}
+          {u?.state === 'available' && !u.manual ? (
             <button className="btn sm primary" disabled={busy} onClick={() => void run(() => window.aim.downloadUpdate())}>
               Download {u.latestVersion ?? ''}
             </button>
@@ -393,8 +398,12 @@ export function SettingsView() {
           <Row label="Show thinking" desc="Reveal the model's reasoning blocks in chats.">
             <Toggle value={s.showThinking} onChange={(v) => set('showThinking', v)} label="Show thinking" />
           </Row>
-          <Row label="Show tool activity" desc="Show every tool call in the conversation. Off collapses each run of work into a single line you can expand.">
-            <Toggle value={s.showToolActivity} onChange={(v) => set('showToolActivity', v)} label="Show tool activity" />
+          <Row label="Tool activity" desc="How A.I.M.'s work (tool calls) appears inside replies.">
+            <select className="select" value={s.toolActivity} onChange={(e) => set('toolActivity', e.target.value as Settings['toolActivity'])}>
+              <option value="collapsed">One line per run (expandable)</option>
+              <option value="show">Show every tool call</option>
+              <option value="hidden">Hide completely</option>
+            </select>
           </Row>
           <Row label="Desktop cursor overlay" desc="Draw A.I.M.'s teal cursor on screen while it controls the mouse.">
             <Toggle value={s.desktopCursorOverlay} onChange={(v) => set('desktopCursorOverlay', v)} label="Desktop cursor overlay" />

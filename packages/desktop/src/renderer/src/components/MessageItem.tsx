@@ -12,8 +12,8 @@ interface Props {
   message: Message;
   agents: AgentInfo[];
   showThinking: boolean;
-  /** Show every tool call; otherwise runs of tool work collapse into one line. */
-  showActivity: boolean;
+  /** show = every tool call; collapsed = one line per run of work; hidden = nothing but a working indicator. */
+  activityMode: 'show' | 'collapsed' | 'hidden';
   streaming: boolean;
 }
 
@@ -111,7 +111,8 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export const MessageItem = memo(function MessageItem({ message, agents, showThinking, showActivity, streaming }: Props) {
+export const MessageItem = memo(function MessageItem({ message, agents, showThinking, activityMode, streaming }: Props) {
+  const showActivity = activityMode === 'show';
   const { state } = useStore();
   const agentName = (id?: string) => (id ? agents.find((a) => a.id === id)?.name : undefined);
 
@@ -203,6 +204,13 @@ export const MessageItem = memo(function MessageItem({ message, agents, showThin
         {segments.map((seg, si) => {
           if (seg.kind === 'text' || showActivity) return seg.items.map(({ item, index }) => renderItem(item, index, index === lastIndex));
           const live = streaming && si === segments.length - 1;
+          if (activityMode === 'hidden') {
+            return live ? (
+              <div key={`a${si}`} className="thinking-indicator">
+                <span className="spinner" /> Working
+              </div>
+            ) : null;
+          }
           return (
             <ActivityGroup key={`a${si}`} items={seg.items.map((x) => x.item)} live={live}>
               {seg.items.map(({ item, index }) => renderItem(item, index, false))}

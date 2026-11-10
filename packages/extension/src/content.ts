@@ -46,7 +46,7 @@ declare global {
 
 const SNAPSHOT_DEFAULT_MAX = 400;
 const TEXT_DEFAULT_MAX = 15_000;
-const CURSOR_AUTOHIDE_MS = 2_000;
+const CURSOR_AUTOHIDE_MS = 3_500;
 const CURSOR_MOVE_MS = 250;
 
 class PageError extends Error {
@@ -966,6 +966,7 @@ const pageHandlers: { [M in PageMethod]: PageHandler<M> } = {
   'ext.page.wait': wait,
   'ext.cursor.show': async (p) => {
     cursor.show(p.x, p.y);
+    cursor.touch();
     return { ok: true };
   },
   'ext.cursor.hide': async () => {

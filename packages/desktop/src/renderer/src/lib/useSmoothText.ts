@@ -24,7 +24,8 @@ export function useSmoothText(target: string): string {
       const have = shownRef.current.length;
       if (have >= target.length) return;
       const remaining = target.length - have;
-      const n = Math.max(1, Math.ceil(remaining / 10));
+      // Between 1 and 14 characters per frame: quick enough to keep up with the model, slow enough to read as typing.
+      const n = Math.min(14, Math.max(1, Math.ceil(remaining / 10)));
       const next = target.slice(0, have + n);
       shownRef.current = next;
       setShown(next);

@@ -69,3 +69,11 @@ After updating A.I.M., open the extensions page and click **Reload** on the A.I.
 ## Removing
 
 Click **Remove** on the extension card. If you also uninstall A.I.M., the folder disappears with it; a browser that still lists the extension will show it as corrupted until it is removed.
+
+## Pin the A.I.M. icon to the toolbar
+
+After loading the extension, click the puzzle-piece (Extensions) button in Edge's toolbar, find **A.I.M. Browser Bridge** and click the pin icon next to it. The A.I.M. icon (black square with the teal pointer) then stays in the toolbar; click it at any time to see the connection state or re-pair.
+
+## Seeing A.I.M. work
+
+While A.I.M. acts in a tab, a teal pointer labelled "A.I.M." appears on the page and moves to what it clicks or types into. It shows for every action in that tab, including reading, and fades a few seconds after the last one. It is only drawn in the tab you are looking at, so A.I.M. working in a background tab never puts a second cursor on your screen.

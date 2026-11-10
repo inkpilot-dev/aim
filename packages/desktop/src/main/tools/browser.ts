@@ -103,6 +103,9 @@ export function createBrowserTools(deps: BrowserToolDeps): { impls: Record<strin
       if (!hub.extensionConnected) return notConnected();
       const tabId = tabIdOf(args);
       if (needsTab && tabId === null) return { ok: false, error: 'tabId (integer) is required. Call browser_tabs to list tabs.' };
+      // Make A.I.M.'s presence visible: the teal cursor appears on the tab for any action, including
+      // read-only ones, and fades a few seconds after the last one. Visible only while the user views that tab.
+      if (tabId !== null) void hub.extCall('ext.cursor.show', { tabId }, 3_000).catch(() => undefined);
       try {
         return await fn(args, tabId);
       } catch (err) {

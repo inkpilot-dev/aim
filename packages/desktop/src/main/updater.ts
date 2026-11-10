@@ -11,7 +11,7 @@
  * be overridden in Settings ("owner/repo" or a github.com URL). Private repositories work with a personal access
  * token, stored only in the local settings file.
  */
-import type { Settings, UpdateStatus } from '@aim/shared';
+import { DEFAULT_UPDATE_REPO, type Settings, type UpdateStatus } from '@aim/shared';
 import type { ConsoleLogger } from './context.js';
 
 /** The subset of electron-updater's AppUpdater we use (kept small so tests can inject a fake). */
@@ -38,6 +38,27 @@ export interface UpdateServiceDeps {
   loadUpdater?: () => UpdaterLike;
   /** Repository compiled into the build (from app-update.yml), shown when Settings has none. */
   builtInRepo?: string;
+  /** Fetches JSON from a URL (defaults to global fetch). Injected in tests. */
+  fetchJson?: (url: string) => Promise<unknown>;
+}
+
+const SOURCE_BUILD_MESSAGE = 'Running from source (pnpm dev). Automatic updates work in the installed app; use Check now to find the newest installer.';
+
+/** "1.2.3" vs "1.2.10": 1 when a is newer, -1 when older, 0 when equal. */
+export function compareVersions(a: string, b: string): number {
+  const pa = a.replace(/^v/, '').split(/[.-]/).map((x) => Number.parseInt(x, 10) || 0);
+  const pb = b.replace(/^v/, '').split(/[.-]/).map((x) => Number.parseInt(x, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d !== 0) return d > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
+async function defaultFetchJson(url: string): Promise<unknown> {
+  const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'A.I.M.-desktop' } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
 /** Accepts "owner/repo" or a github.com URL (with or without .git). */
@@ -80,7 +101,7 @@ export class UpdateService {
 
   constructor(private readonly deps: UpdateServiceDeps) {
     this.status = { state: deps.isPackaged ? 'idle' : 'unsupported', currentVersion: deps.currentVersion };
-    if (!deps.isPackaged) this.status.message = 'Automatic updates are available in packaged builds only.';
+    if (!deps.isPackaged) this.status.message = SOURCE_BUILD_MESSAGE;
     this.applyRepoToStatus();
   }
 
@@ -141,10 +162,7 @@ export class UpdateService {
   }
 
   private async doCheck(): Promise<UpdateStatus> {
-    if (!this.deps.isPackaged) {
-      this.set({ state: 'unsupported', message: 'Automatic updates are available in packaged builds only.', checkedAt: Date.now() });
-      return this.getStatus();
-    }
+    if (!this.deps.isPackaged) return this.checkSourceBuild();
     const s = this.deps.settings();
     if (!s.updatesEnabled) {
       this.set({ state: 'disabled', message: 'Automatic updates are turned off in Settings.', checkedAt: Date.now() });
@@ -175,7 +193,8 @@ export class UpdateService {
 
   async download(): Promise<UpdateStatus> {
     const updater = this.updater;
-    if (!updater || !this.deps.isPackaged) return this.getStatus();
+    if (!this.deps.isPackaged) return this.getStatus(); // the UI opens releaseUrl instead
+    if (!updater) return this.getStatus();
     if (this.status.state !== 'available' && this.status.state !== 'error') return this.getStatus();
     this.set({ state: 'downloading', percent: 0, error: undefined });
     try {
@@ -202,8 +221,47 @@ export class UpdateService {
 
   private applyRepoToStatus(): void {
     const s = this.deps.settings();
-    const repo = formatRepo(parseRepo(s.updatesRepo)) ?? this.deps.builtInRepo;
+    const repo = formatRepo(parseRepo(s.updatesRepo)) ?? this.deps.builtInRepo ?? DEFAULT_UPDATE_REPO;
     this.status.repo = repo;
+  }
+
+  /**
+   * A source build cannot install updates, but it can tell the user that a newer installer exists:
+   * look up the newest GitHub release and point at it.
+   */
+  private async checkSourceBuild(): Promise<UpdateStatus> {
+    this.applyRepoToStatus();
+    const repo = this.status.repo;
+    if (!repo) {
+      this.set({ state: 'unsupported', message: SOURCE_BUILD_MESSAGE, checkedAt: Date.now() });
+      return this.getStatus();
+    }
+    this.set({ state: 'checking', error: undefined });
+    try {
+      const fetchJson = this.deps.fetchJson ?? defaultFetchJson;
+      const rel = (await fetchJson(`https://api.github.com/repos/${repo}/releases/latest`)) as { tag_name?: string; html_url?: string; body?: string; published_at?: string } | null;
+      const latest = rel?.tag_name?.replace(/^v/, '');
+      const url = rel?.html_url ?? `https://github.com/${repo}/releases/latest`;
+      if (!latest) throw new Error('No release found');
+      if (compareVersions(latest, this.deps.currentVersion) > 0) {
+        this.set({
+          state: 'available',
+          manual: true,
+          latestVersion: latest,
+          releaseUrl: url,
+          releaseNotes: rel?.body ? rel.body.slice(0, 4000) : undefined,
+          releaseDate: rel?.published_at,
+          message: `Version ${latest} is available. You are running from source; download the installer to switch to automatic updates.`,
+          checkedAt: Date.now(),
+          error: undefined,
+        });
+      } else {
+        this.set({ state: 'unsupported', latestVersion: latest, releaseUrl: url, manual: true, message: `${SOURCE_BUILD_MESSAGE} You already have the newest version (${latest}).`, checkedAt: Date.now() });
+      }
+    } catch (err) {
+      this.set({ state: 'unsupported', message: `${SOURCE_BUILD_MESSAGE} (Could not reach GitHub: ${friendlyError(err)})`, checkedAt: Date.now() });
+    }
+    return this.getStatus();
   }
 
   private configureUpdater(): UpdaterLike {

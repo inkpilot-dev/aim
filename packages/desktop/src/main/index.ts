@@ -182,6 +182,7 @@ async function main(): Promise<void> {
     onStatus: (status) => {
       emitGlobal({ type: 'update', status });
       if (status.state === 'downloaded') toast('success', `A.I.M. ${status.latestVersion ?? ''} is ready to install`, 'It installs when you quit, or use Settings → Updates → Restart and update.');
+      else if (status.state === 'available' && status.manual) toast('info', `Version ${status.latestVersion ?? ''} is available`, 'You are running from source. Download the installer from Settings → Updates to switch to automatic updates.');
       else if (status.state === 'available') toast('info', `Update ${status.latestVersion ?? ''} available`, 'Download it from Settings → Updates.');
     },
   });

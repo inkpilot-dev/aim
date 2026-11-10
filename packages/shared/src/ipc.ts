@@ -53,6 +53,9 @@ export interface UpdateStatus {
   error?: string;
   /** Human-readable explanation for disabled/unsupported states. */
   message?: string;
+  /** Set when the update cannot be applied automatically (source build): open this page to download the installer. */
+  releaseUrl?: string;
+  manual?: boolean;
 }
 
 export interface AppHealth {

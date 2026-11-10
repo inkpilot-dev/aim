@@ -27,6 +27,10 @@ The script bumps `packages/desktop/package.json`, commits, tags `v0.2.0` and pus
 * The update installs when the app quits, or immediately through Settings → Updates → "Restart and update". Chats, memories, goals and settings live in the application data folder and are untouched by updates.
 * The bundled browser extension is updated together with the app. Edge and Chrome re-read an unpacked extension from disk when the browser restarts; if the extension's permissions change in a release, the browser asks you to accept them.
 
+## Running from source
+
+A copy started with `pnpm dev` cannot replace itself, so it does not auto-update. It still checks GitHub: Settings → Updates shows "Running from source" and, when a newer release exists, a "Download installer" button that opens the release page. Install that once and the installed copy updates itself from then on.
+
 ## Settings reference
 
 | Setting | Meaning |
