@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>A.I.M. — Trailer</title>
+<style>
+  @font-face { font-family: 'Inter'; font-weight: 400; src: url('fonts/Inter-normal-400.woff2') format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 500; src: url('fonts/Inter-normal-500.woff2') format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 600; src: url('fonts/Inter-normal-600.woff2') format('woff2'); }
+  @font-face { font-family: 'Source Serif 4'; font-weight: 400; src: url('fonts/SourceSerif4-normal-400.woff2') format('woff2'); }
+  @font-face { font-family: 'Source Serif 4'; font-weight: 500; src: url('fonts/SourceSerif4-normal-500.woff2') format('woff2'); }
+  @font-face { font-family: 'Source Serif 4'; font-weight: 600; src: url('fonts/SourceSerif4-normal-600.woff2') format('woff2'); }
+  @font-face { font-family: 'Source Serif 4'; font-weight: 400; font-style: italic; src: url('fonts/SourceSerif4-italic-400.woff2') format('woff2'); }
+
+  :root { --teal: #1abfb0; --teal-bright: #2ee6d6; --bg: #050506; --text: #f1f1f3; --muted: #9d9da8; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); font-family: Inter, sans-serif; color: var(--text); }
+  #shake { position: absolute; inset: 0; }
+  #bg { position: absolute; inset: 0; }
+  [data-in] { position: absolute; visibility: hidden; will-change: transform, opacity; }
+
+  /* Typography */
+  .line { left: 0; width: 1920px; text-align: center; font-family: 'Source Serif 4', serif; font-weight: 400; font-size: 64px; letter-spacing: 0.01em; color: var(--text); text-shadow: 0 0 40px rgba(26,191,176,0.18); }
+  .line em { font-style: italic; color: var(--teal-bright); }
+  .word { left: 0; width: 1920px; text-align: center; font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 150px; letter-spacing: 0.02em; }
+  .big { font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 132px; line-height: 1; letter-spacing: 0.02em; white-space: nowrap; }
+  .big .dot { color: var(--teal); }
+  .caps { font-family: Inter, sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.42em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .caps.teal { color: var(--teal); }
+  .sub { font-family: 'Source Serif 4', serif; font-size: 40px; color: var(--muted); white-space: nowrap; }
+  .montage { left: 0; width: 1920px; text-align: center; font-family: Inter, sans-serif; font-weight: 600; font-size: 118px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .montage .n { color: var(--teal-bright); }
+
+  /* App window */
+  .win { border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 60px 140px rgba(0,0,0,0.75), 0 0 0 1px rgba(26,191,176,0.10), 0 0 120px rgba(26,191,176,0.16); background: #0f0f11; transform-origin: 50% 50%; }
+  .win img { display: block; width: 100%; height: auto; }
+  .win .sheen { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,0) 100%); pointer-events: none; }
+  .scan { position: absolute; left: 0; right: 0; height: 120px; background: linear-gradient(180deg, rgba(46,230,214,0) 0%, rgba(46,230,214,0.16) 78%, rgba(46,230,214,0.85) 98%, rgba(255,255,255,0.9) 100%); mix-blend-mode: screen; }
+
+  /* Browser mock */
+  .browser { border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); background: #141417; box-shadow: 0 60px 140px rgba(0,0,0,0.75), 0 0 120px rgba(26,191,176,0.14); }
+  .b-tabs { height: 46px; background: #0c0c0e; display: flex; align-items: flex-end; padding: 0 14px; gap: 6px; }
+  .b-tab { height: 34px; padding: 0 16px; border-radius: 10px 10px 0 0; background: #17171b; color: #7d7d88; font-size: 14px; display: flex; align-items: center; gap: 8px; min-width: 150px; }
+  .b-tab.on { background: #1f1f24; color: #e9e9ee; }
+  .b-tab i { width: 12px; height: 12px; border-radius: 3px; background: #3a3a44; display: inline-block; }
+  .b-tab.on i { background: var(--teal); }
+  .b-bar { height: 44px; background: #1f1f24; display: flex; align-items: center; padding: 0 16px; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .b-url { flex: 1; height: 28px; border-radius: 14px; background: #121215; color: #8d8d99; font-size: 14px; display: flex; align-items: center; padding: 0 14px; }
+  .b-dots { display: flex; gap: 7px; } .b-dots span { width: 10px; height: 10px; border-radius: 50%; background: #34343d; }
+  .b-page { position: relative; background: #f6f6f4; color: #1c1c1e; }
+  .b-h { font-family: 'Source Serif 4', serif; font-size: 34px; font-weight: 600; }
+  .b-p { color: #6a6a74; font-size: 16px; }
+  .field { position: absolute; height: 52px; border-radius: 10px; border: 1.5px solid #d6d6d2; background: #fff; display: flex; align-items: center; padding: 0 16px; font-size: 19px; color: #1c1c1e; }
+  .field label { position: absolute; top: -26px; left: 2px; font-size: 14px; color: #6a6a74; font-weight: 500; }
+  .btn-mock { position: absolute; height: 52px; border-radius: 10px; background: #1c1c1e; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; }
+  .row { position: absolute; left: 44px; right: 44px; height: 54px; border-radius: 10px; background: #fff; border: 1px solid #e3e3df; display: flex; align-items: center; padding: 0 18px; font-size: 17px; color: #2a2a2e; gap: 14px; }
+  .row b { flex: 1; font-weight: 500; }
+  .row span.meta { color: #8a8a94; font-size: 14px; }
+  .check { width: 24px; height: 24px; border-radius: 50%; background: var(--teal); display: inline-flex; align-items: center; justify-content: center; }
+  .check::after { content: ''; width: 10px; height: 5px; border-left: 2.5px solid #06201d; border-bottom: 2.5px solid #06201d; transform: rotate(-45deg) translate(1px,-1px); }
+
+  /* Cursors */
+  .aimcur { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 5; }
+  .aimcur svg { position: absolute; left: -4px; top: -3px; width: 40px; height: 46px; overflow: visible; filter: drop-shadow(0 0 12px rgba(26,191,176,0.9)) drop-shadow(0 3px 5px rgba(0,0,0,0.45)); }
+  .aimcur .tag { position: absolute; left: 30px; top: 34px; font: 600 13px/1 Inter, sans-serif; letter-spacing: .08em; color: #fff; background: var(--teal); border: 1.5px solid rgba(255,255,255,.9); border-radius: 6px; padding: 5px 7px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .aimcur .ripple { position: absolute; left: -30px; top: -30px; width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--teal-bright); opacity: 0; }
+  .usercur svg { position: absolute; left: -3px; top: -2px; width: 30px; height: 34px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+
+  /* Learned notes */
+  .learn { display: flex; align-items: flex-start; gap: 18px; font-family: 'Source Serif 4', serif; font-size: 38px; line-height: 1.35; color: #e6e6ea; white-space: nowrap; }
+  .learn i { width: 12px; height: 12px; border-radius: 50%; background: var(--teal); margin-top: 21px; box-shadow: 0 0 18px var(--teal); flex: none; }
+  .learn b { color: var(--teal-bright); font-family: Inter, sans-serif; font-weight: 600; font-size: 24px; letter-spacing: .12em; text-transform: uppercase; margin-top: 12px; }
+
+  /* Split scene */
+  .panel { border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 50px 120px rgba(0,0,0,0.7); }
+  .game { background: linear-gradient(180deg, #0a0620 0%, #1b0b3a 46%, #3a1560 58%, #0a0620 58.2%, #05030f 100%); }
+  .game .sun { position: absolute; left: 50%; top: 22%; width: 210px; height: 210px; margin-left: -105px; border-radius: 50%; background: linear-gradient(180deg, #ffd27a 0%, #ff7ab8 55%, #b04cff 100%); box-shadow: 0 0 90px rgba(255,122,184,0.55); }
+  .game .floorwrap { position: absolute; left: 0; right: 0; top: 58%; bottom: 0; perspective: 420px; overflow: hidden; }
+  .game .floor { position: absolute; left: -60%; right: -60%; top: 0; height: 240%; transform: rotateX(72deg); transform-origin: 50% 0; background-image: linear-gradient(rgba(190,120,255,0.75) 2px, transparent 2px), linear-gradient(90deg, rgba(190,120,255,0.75) 2px, transparent 2px); background-size: 70px 70px; }
+  .game .hud { position: absolute; left: 22px; top: 18px; font: 600 15px Inter, sans-serif; letter-spacing: .18em; color: rgba(255,255,255,0.8); }
+  .game .cross { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 2px solid rgba(255,255,255,0.85); border-radius: 50%; }
+
+  /* Ring */
+  .ringwrap { width: 260px; height: 260px; }
+  .ringwrap svg { transform: rotate(-90deg); }
+  .ringwrap .num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Source Serif 4', serif; font-size: 78px; font-weight: 600; }
+
+  /* Logo */
+  .logo img { display: block; width: 100%; height: 100%; border-radius: 22%; }
+  .burst { width: 1500px; height: 1500px; border-radius: 50%; background: radial-gradient(closest-side, rgba(46,230,214,0.34), rgba(26,191,176,0.10) 45%, rgba(26,191,176,0) 70%); }
+  .flare { width: 2200px; height: 5px; background: linear-gradient(90deg, rgba(46,230,214,0), rgba(190,255,250,0.95) 50%, rgba(46,230,214,0)); filter: blur(1.5px); box-shadow: 0 0 40px 6px rgba(46,230,214,0.45); }
+  .title { left: 0; width: 1920px; text-align: center; font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 176px; letter-spacing: 0.10em; text-shadow: 0 0 80px rgba(26,191,176,0.35); }
+
+  /* Overlays */
+  #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 52%, rgba(0,0,0,0.62) 100%); pointer-events: none; z-index: 40; }
+  #flash { position: absolute; inset: 0; background: #d9fffb; opacity: 0; pointer-events: none; z-index: 45; }
+  #grain { position: absolute; inset: -200px; opacity: 0.085; pointer-events: none; z-index: 46; mix-blend-mode: overlay; }
+  .bar { position: absolute; left: 0; right: 0; height: 138px; background: #000; z-index: 50; }
+  #fadeout { position: absolute; inset: 0; background: #000; opacity: 0; z-index: 60; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="shake">
+    <canvas id="bg" width="1920" height="1080"></canvas>
+
+    <!-- S1 0–3.8 -->
+    <div class="line" style="top:478px" data-in="0.5" data-out="3.7" data-din="1.3" data-dout="0.7" data-fx="blur track">Every day, you tell your computer what to do.</div>
+
+    <!-- S2 3.8–7.0 -->
+    <div class="word" style="top:440px;font-size:120px" data-in="3.9" data-out="4.6" data-din="0.12" data-dout="0.12" data-fx="punch">Click.</div>
+    <div class="word" style="top:432px;font-size:136px" data-in="4.6" data-out="5.3" data-din="0.12" data-dout="0.12" data-fx="punch">Scroll.</div>
+    <div class="word" style="top:424px;font-size:152px" data-in="5.3" data-out="6.0" data-din="0.12" data-dout="0.12" data-fx="punch">Type.</div>
+    <div class="word" style="top:414px;font-size:172px" data-in="6.0" data-out="6.95" data-din="0.12" data-dout="0.25" data-fx="punch">Repeat.</div>
+
+    <!-- S3 7.0–10.2 -->
+    <div class="line" style="top:478px;font-size:72px" data-in="7.5" data-out="10.15" data-din="1.1" data-dout="0.12" data-fx="blur track">What if it just <em>knew?</em></div>
+
+    <!-- S4 10.2–15.5: reveal -->
+    <div class="win" style="left:400px;top:164px;width:1120px;box-shadow:0 60px 140px rgba(0,0,0,0.75), 0 0 0 1px rgba(46,230,214,0.28), 0 0 160px rgba(26,191,176,0.30)" data-in="10.2" data-out="15.45" data-din="0.9" data-dout="0.25" data-fx="win" data-ry="-9" data-rx="5" data-s0="0.9" data-s1="1.04"><img src="shots/home.png" /><div class="sheen"></div></div>
+    <div class="caps teal" style="left:0;width:1920px;text-align:center;top:896px" data-in="11.6" data-out="15.3" data-din="0.8" data-dout="0.3" data-fx="track">A desktop agent that works for you</div>
+
+    <!-- S5 15.5–19.0: IT SEES -->
+    <div class="big" style="left:150px;top:420px" data-in="15.5" data-out="18.95" data-din="0.25" data-dout="0.2" data-fx="punch">It sees<span class="dot">.</span></div>
+    <div class="sub" style="left:156px;top:580px" data-in="16.0" data-out="18.9" data-din="0.6" data-dout="0.2" data-fx="up">Your screen. Your windows. Your work.</div>
+    <div class="win" style="left:900px;top:228px;width:960px" data-in="15.5" data-out="18.95" data-din="0.35" data-dout="0.2" data-fx="win" data-ry="-16" data-rx="4" data-s0="0.97" data-s1="1.04"><img src="shots/chat.png" /><div class="scan" data-scan="15.6"></div><div class="sheen"></div></div>
+
+    <!-- S6 19.0–22.5: IT ACTS -->
+    <div class="big" style="left:1150px;top:420px" data-in="19.0" data-out="22.45" data-din="0.25" data-dout="0.2" data-fx="punch">It acts<span class="dot">.</span></div>
+    <div class="sub" style="left:1156px;top:580px" data-in="19.5" data-out="22.4" data-din="0.6" data-dout="0.2" data-fx="up">In your browser. On your desktop.</div>
+    <div class="browser" style="left:70px;top:226px;width:980px;height:628px" data-in="19.0" data-out="22.45" data-din="0.35" data-dout="0.2" data-fx="win" data-ry="15" data-rx="4" data-s0="0.97" data-s1="1.04">
+      <div class="b-tabs"><div class="b-tab on"><i></i>Application</div><div class="b-tab"><i></i>Inbox</div><div class="b-tab"><i></i>Notes</div></div>
+      <div class="b-bar"><div class="b-dots"><span></span><span></span><span></span></div><div class="b-url">forms.example.com/application</div></div>
+      <div class="b-page" style="height:538px">
+        <div class="b-h" style="position:absolute;left:60px;top:38px">Application form</div>
+        <div class="b-p" style="position:absolute;left:60px;top:86px">Three fields left before you can continue.</div>
+        <div class="field" style="left:60px;top:166px;width:520px"><label>Full name</label><span data-type="19.75,26" data-text="Alex Morgan"></span></div>
+        <div class="field" style="left:60px;top:272px;width:520px"><label>Email</label><span data-type="20.75,30" data-text="alex@example.com"></span></div>
+        <div class="field" style="left:60px;top:378px;width:520px"><label>Start date</label><span data-type="21.5,30" data-text="Monday"></span></div>
+        <div class="btn-mock" style="left:640px;top:378px;width:220px">Continue</div>
+        <div class="aimcur" data-path='[[19.0,820,470],[19.65,470,196],[20.6,470,196],[20.72,470,302],[21.35,470,302],[21.47,470,408],[21.95,470,408],[22.2,750,408]]' data-clicks="[19.7,20.74,21.49,22.22]">
+          <div class="ripple"></div>
+          <svg viewBox="0 0 24 28"><path d="M3 2 L3 21 L8 16.5 L11.5 24 L15 22.5 L11.5 15 L18 15 Z" fill="#1abfb0" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span class="tag">A.I.M.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S7 22.5–26.0: IT LEARNS -->
+    <div class="big" style="left:150px;top:420px" data-in="22.5" data-out="25.95" data-din="0.25" data-dout="0.2" data-fx="punch">It learns<span class="dot">.</span></div>
+    <div class="sub" style="left:156px;top:580px" data-in="23.0" data-out="25.9" data-din="0.6" data-dout="0.2" data-fx="up">And tells you what it picked up.</div>
+    <div class="learn" style="left:980px;top:352px" data-in="23.0" data-out="25.9" data-din="0.45" data-dout="0.2" data-fx="up"><i></i><b>Learned</b><span>You prefer Microsoft Edge.</span></div>
+    <div class="learn" style="left:980px;top:466px" data-in="23.7" data-out="25.9" data-din="0.45" data-dout="0.2" data-fx="up"><i></i><b>Learned</b><span>Downloads are sorted by type.</span></div>
+    <div class="learn" style="left:980px;top:580px" data-in="24.4" data-out="25.9" data-din="0.45" data-dout="0.2" data-fx="up"><i></i><b>Learned</b><span>Mornings start around 8:30.</span></div>
+
+    <!-- S8 26.0–33.0: split -->
+    <div class="line" style="top:176px;font-size:68px" data-in="26.2" data-out="32.9" data-din="0.8" data-dout="0.3" data-fx="blur">While you play, <em data-in-inline="28.0">it works.</em></div>
+    <div class="caps" style="left:110px;top:300px" data-in="26.6" data-out="32.9" data-din="0.5" data-dout="0.3" data-fx="fade">You</div>
+    <div class="caps teal" style="left:1010px;top:300px" data-in="27.6" data-out="32.9" data-din="0.5" data-dout="0.3" data-fx="fade">A.I.M. · background tab</div>
+    <div class="panel game" style="left:110px;top:344px;width:800px;height:500px" data-in="26.4" data-out="32.9" data-din="0.7" data-dout="0.3" data-fx="win" data-ry="6" data-rx="2" data-s0="0.98" data-s1="1.02">
+      <div class="sun"></div>
+      <div class="floorwrap"><div class="floor" data-scroll="150"></div></div>
+      <div class="hud">SCORE 12 480 · LAP 3</div>
+      <div class="cross"></div>
+      <div class="aimcur usercur" data-path='[[26.4,420,300],[27.3,520,250],[28.2,340,270],[29.1,460,220],[30.0,560,290],[30.9,380,240],[31.8,470,280],[32.9,400,250]]'>
+        <svg viewBox="0 0 24 28"><path d="M3 2 L3 21 L8 16.5 L11.5 24 L15 22.5 L11.5 15 L18 15 Z" fill="#fff" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+    <div class="browser" style="left:1010px;top:344px;width:800px;height:500px" data-in="27.4" data-out="32.9" data-din="0.7" data-dout="0.3" data-fx="win" data-ry="-6" data-rx="2" data-s0="0.98" data-s1="1.02">
+      <div class="b-tabs"><div class="b-tab"><i></i>Game</div><div class="b-tab on"><i></i>Research</div></div>
+      <div class="b-bar"><div class="b-dots"><span></span><span></span><span></span></div><div class="b-url">search · laptop comparison</div></div>
+      <div class="b-page" style="height:410px">
+        <div class="row" style="top:26px"><b>Compare three laptops under budget</b><span class="meta">read</span><span class="check" data-in="28.5" data-out="33" data-din="0.2" data-fx="punch" style="position:static;visibility:hidden"></span></div>
+        <div class="row" style="top:94px"><b>Battery life benchmarks</b><span class="meta">read</span><span class="check" data-in="29.4" data-out="33" data-din="0.2" data-fx="punch" style="position:static;visibility:hidden"></span></div>
+        <div class="row" style="top:162px"><b>Owner reviews, last 90 days</b><span class="meta">read</span><span class="check" data-in="30.3" data-out="33" data-din="0.2" data-fx="punch" style="position:static;visibility:hidden"></span></div>
+        <div class="row" style="top:230px"><b>Warranty terms</b><span class="meta">read</span><span class="check" data-in="31.2" data-out="33" data-din="0.2" data-fx="punch" style="position:static;visibility:hidden"></span></div>
+        <div class="row" style="top:298px"><b>Summary written to your chat</b><span class="meta">done</span><span class="check" data-in="32.0" data-out="33" data-din="0.2" data-fx="punch" style="position:static;visibility:hidden"></span></div>
+        <div class="aimcur" data-path='[[27.4,620,360],[28.4,690,52],[29.3,690,120],[30.2,690,188],[31.1,690,256],[31.9,690,324],[32.9,690,324]]' data-clicks="[28.45,29.35,30.25,31.15,31.95]">
+          <div class="ripple"></div>
+          <svg viewBox="0 0 24 28"><path d="M3 2 L3 21 L8 16.5 L11.5 24 L15 22.5 L11.5 15 L18 15 Z" fill="#1abfb0" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span class="tag">A.I.M.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S9 33.0–39.0: goals -->
+    <div class="line" style="left:120px;width:auto;text-align:left;top:300px;font-size:66px" data-in="33.1" data-out="38.9" data-din="0.7" data-dout="0.3" data-fx="blur">Every morning,</div>
+    <div class="line" style="left:120px;width:auto;text-align:left;top:384px;font-size:66px" data-in="34.0" data-out="38.9" data-din="0.7" data-dout="0.3" data-fx="blur">it sets <em>its own goals.</em></div>
+    <div class="ringwrap" style="left:124px;top:520px" data-in="34.6" data-out="38.9" data-din="0.5" data-dout="0.3" data-fx="fade">
+      <svg width="260" height="260"><circle cx="130" cy="130" r="112" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="12"/><circle id="ring" cx="130" cy="130" r="112" fill="none" stroke="#1abfb0" stroke-width="12" stroke-linecap="round" stroke-dasharray="703.7" stroke-dashoffset="703.7" style="filter:drop-shadow(0 0 14px rgba(26,191,176,0.8))"/></svg>
+      <div class="num" id="ringnum">0/5</div>
+    </div>
+    <div class="caps" style="left:420px;top:636px" data-in="35.0" data-out="38.9" data-din="0.5" data-dout="0.3" data-fx="fade">And finishes them</div>
+    <div class="win" style="left:900px;top:228px;width:960px" data-in="33.0" data-out="38.95" data-din="0.5" data-dout="0.25" data-fx="win" data-ry="-15" data-rx="4" data-s0="0.97" data-s1="1.05"><img src="shots/goals.png" /><div class="sheen"></div></div>
+
+    <!-- S10 39.0–44.4: montage -->
+    <div class="montage" style="top:462px" data-in="39.0" data-out="40.15" data-din="0.1" data-dout="0.1" data-fx="punch"><span class="n">43</span> tools</div>
+    <div class="montage" style="top:462px" data-in="40.2" data-out="41.15" data-din="0.1" data-dout="0.1" data-fx="punch">Parallel agents</div>
+    <div class="montage" style="top:462px" data-in="41.2" data-out="41.95" data-din="0.08" data-dout="0.08" data-fx="punch">Self-repairing</div>
+    <div class="montage" style="top:462px" data-in="42.0" data-out="42.55" data-din="0.08" data-dout="0.08" data-fx="punch">Self-updating</div>
+    <div class="montage" style="top:462px" data-in="42.6" data-out="43.08" data-din="0.06" data-dout="0.06" data-fx="punch">Always learning</div>
+    <div class="win" style="left:260px;top:100px;width:1400px" data-in="43.10" data-out="43.32" data-din="0.03" data-dout="0.03" data-fx="win" data-ry="0" data-rx="0" data-s0="1.02" data-s1="1.06"><img src="shots/home.png" /></div>
+    <div class="win" style="left:260px;top:100px;width:1400px" data-in="43.32" data-out="43.54" data-din="0.03" data-dout="0.03" data-fx="win" data-ry="0" data-rx="0" data-s0="1.02" data-s1="1.06"><img src="shots/chat.png" /></div>
+    <div class="win" style="left:260px;top:100px;width:1400px" data-in="43.54" data-out="43.74" data-din="0.03" data-dout="0.03" data-fx="win" data-ry="0" data-rx="0" data-s0="1.02" data-s1="1.06"><img src="shots/goals.png" /></div>
+    <div class="win" style="left:260px;top:100px;width:1400px" data-in="43.74" data-out="43.92" data-din="0.03" data-dout="0.03" data-fx="win" data-ry="0" data-rx="0" data-s0="1.02" data-s1="1.06"><img src="shots/memory.png" /></div>
+    <div class="win" style="left:260px;top:100px;width:1400px" data-in="43.92" data-out="44.08" data-din="0.03" data-dout="0.03" data-fx="win" data-ry="0" data-rx="0" data-s0="1.02" data-s1="1.06"><img src="shots/chat.png" /></div>
+    <div class="win" style="left:260px;top:100px;width:1400px" data-in="44.08" data-out="44.22" data-din="0.03" data-dout="0.03" data-fx="win" data-ry="0" data-rx="0" data-s0="1.02" data-s1="1.06"><img src="shots/home.png" /></div>
+    <div class="win" style="left:260px;top:100px;width:1400px" data-in="44.22" data-out="44.38" data-din="0.03" data-dout="0.02" data-fx="win" data-ry="0" data-rx="0" data-s0="1.02" data-s1="1.06"><img src="shots/goals.png" /></div>
+
+    <!-- S10b 44.4–47.8: the rule -->
+    <div class="caps teal" style="left:0;width:1920px;text-align:center;top:452px" data-in="44.9" data-out="47.6" data-din="0.5" data-dout="0.25" data-fx="track">One rule</div>
+    <div class="line" style="top:506px;font-size:70px" data-in="45.5" data-out="47.6" data-din="0.7" data-dout="0.25" data-fx="blur">It never spends your money.</div>
+
+    <!-- S11 47.8–55.0: title -->
+    <div class="burst" style="left:210px;top:-240px" data-in="47.8" data-out="55.2" data-din="0.5" data-dout="0.8" data-fx="burst"></div>
+    <div class="flare" style="left:-140px;top:398px" data-in="47.8" data-out="54.9" data-din="0.2" data-dout="0.8" data-fx="flare"></div>
+    <div class="logo" style="left:840px;top:278px;width:240px;height:240px" data-in="47.8" data-out="54.9" data-din="0.7" data-dout="0.6" data-fx="logo"><img src="shots/icon.png" /></div>
+    <div class="title" style="top:540px" data-in="48.5" data-out="54.9" data-din="1.1" data-dout="0.6" data-fx="blur track">A.I.M.</div>
+    <div class="caps" style="left:0;width:1920px;text-align:center;top:768px;font-size:24px;letter-spacing:0.6em" data-in="49.6" data-out="52.0" data-din="0.9" data-dout="0.5" data-fx="track">Artificial Intelligence Management</div>
+    <div class="line" style="top:748px;font-size:58px;font-style:italic;color:var(--teal-bright)" data-in="52.2" data-out="54.9" data-din="0.8" data-dout="0.6" data-fx="blur">Tell it once.</div>
+
+    <!-- S12 55.0–58.0: end card -->
+    <div class="caps teal" style="left:0;width:1920px;text-align:center;top:452px;font-size:26px" data-in="55.3" data-out="57.6" data-din="0.6" data-dout="0.5" data-fx="track">Available now</div>
+    <div class="line" style="top:508px;font-size:56px" data-in="55.6" data-out="57.6" data-din="0.6" data-dout="0.5" data-fx="fade">github.com/inkpilot-dev/aim</div>
+    <div class="caps" style="left:0;width:1920px;text-align:center;top:626px;font-size:17px;letter-spacing:0.3em" data-in="56.0" data-out="57.6" data-din="0.6" data-dout="0.5" data-fx="fade">Windows · Runs on your Claude Code login</div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="flash"></div>
+  <canvas id="grain" width="512" height="512" style="width:2320px;height:1480px"></canvas>
+  <div class="bar" style="top:0"></div>
+  <div class="bar" style="bottom:0"></div>
+  <div id="fadeout"></div>
+</div>
+
+<script>
+const DURATION = 58;
+const HITS = [[10.2, 1.0], [15.5, 0.45], [19.0, 0.45], [22.5, 0.45], [26.0, 0.3], [33.0, 0.3], [39.0, 0.4], [40.2, 0.35], [41.2, 0.35], [42.0, 0.35], [42.6, 0.35], [47.8, 1.0]];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, p) => a + (b - a) * p;
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const easeInOut = (x) => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+function prng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+// ── element table ──
+const items = [...document.querySelectorAll('[data-in]')].map((el) => ({
+  el, tin: +el.dataset.in, tout: +el.dataset.out, din: +(el.dataset.din ?? 0.6), dout: +(el.dataset.dout ?? 0.4),
+  fx: (el.dataset.fx ?? 'fade').split(' '), ry: +(el.dataset.ry ?? 0), rx: +(el.dataset.rx ?? 0), s0: +(el.dataset.s0 ?? 1), s1: +(el.dataset.s1 ?? 1),
+  baseLS: parseFloat(getComputedStyle(el).letterSpacing) || 0, fs: parseFloat(getComputedStyle(el).fontSize) || 16,
+}));
+const typers = [...document.querySelectorAll('[data-type]')].map((el) => { const [t0, cps] = el.dataset.type.split(',').map(Number); return { el, t0, cps, text: el.dataset.text }; });
+const cursors = [...document.querySelectorAll('[data-path]')].map((el) => ({ el, path: JSON.parse(el.dataset.path), clicks: el.dataset.clicks ? JSON.parse(el.dataset.clicks) : [], ripple: el.querySelector('.ripple') }));
+const scans = [...document.querySelectorAll('[data-scan]')].map((el) => ({ el, t0: +el.dataset.scan }));
+const scrolls = [...document.querySelectorAll('[data-scroll]')].map((el) => ({ el, speed: +el.dataset.scroll }));
+const inlineIns = [...document.querySelectorAll('[data-in-inline]')].map((el) => ({ el, t0: +el.dataset.inInline }));
+
+// ── background particles ──
+const bg = document.getElementById('bg'); const g = bg.getContext('2d');
+const rnd = prng(20261110);
+const parts = Array.from({ length: 170 }, () => ({ x: rnd() * 1920, y: rnd() * 1080, vx: (rnd() - 0.5) * 9, vy: -4 - rnd() * 14, r: 0.6 + rnd() * 2.2, a: 0.15 + rnd() * 0.55, f: 0.3 + rnd() * 1.4, ph: rnd() * 6.28, teal: rnd() < 0.38, z: 0.4 + rnd() * 0.9 }));
+function drawBg(t) {
+  g.clearRect(0, 0, 1920, 1080);
+  // drifting glow
+  const gx = 960 + Math.sin(t * 0.21) * 360, gy = 560 + Math.cos(t * 0.17) * 120;
+  const dim = (t > 10.2 && t < 39) ? 0.55 : 1; // calmer behind interface scenes
+  const glow = g.createRadialGradient(gx, gy, 0, gx, gy, 900);
+  glow.addColorStop(0, `rgba(26,191,176,${0.11 * dim})`); glow.addColorStop(0.5, `rgba(26,191,176,${0.035 * dim})`); glow.addColorStop(1, 'rgba(26,191,176,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, 1920, 1080);
+  for (const p of parts) {
+    const x = (((p.x + p.vx * t * p.z) % 1920) + 1920) % 1920;
+    const y = (((p.y + p.vy * t * p.z) % 1080) + 1080) % 1080;
+    const tw = 0.55 + 0.45 * Math.sin(t * p.f + p.ph);
+    g.globalAlpha = p.a * tw * dim;
+    g.fillStyle = p.teal ? '#2ee6d6' : '#dfe7ea';
+    g.beginPath(); g.arc(x, y, p.r * p.z, 0, 6.2832); g.fill();
+  }
+  g.globalAlpha = 1;
+}
+
+// ── film grain tile ──
+const grain = document.getElementById('grain'); const gg = grain.getContext('2d');
+(function () { const r = prng(77); const img = gg.createImageData(512, 512); for (let i = 0; i < img.data.length; i += 4) { const v = Math.floor(r() * 255); img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; } gg.putImageData(img, 0, 0); })();
+
+const ring = document.getElementById('ring'), ringnum = document.getElementById('ringnum');
+const flash = document.getElementById('flash'), shake = document.getElementById('shake'), fadeout = document.getElementById('fadeout');
+
+function seek(t) {
+  drawBg(t);
+  for (const it of items) {
+    const { el } = it;
+    if (t < it.tin || t >= it.tout) { el.style.visibility = 'hidden'; continue; }
+    el.style.visibility = 'visible';
+    const pin = clamp((t - it.tin) / it.din), pout = clamp((it.tout - t) / it.dout), life = clamp((t - it.tin) / (it.tout - it.tin));
+    const ein = easeOut(pin);
+    let opacity = ein * easeOut(pout), tf = '', filter = '';
+    for (const fx of it.fx) {
+      if (fx === 'up') tf += ` translateY(${(1 - ein) * 46}px)`;
+      else if (fx === 'blur') { filter += ` blur(${(1 - ein) * 16}px)`; tf += ` scale(${lerp(1.0, 1.035, life)})`; }
+      else if (fx === 'track') el.style.letterSpacing = `${it.baseLS + it.fs * lerp(0.0, 0.07, life)}px`;
+      else if (fx === 'punch') { tf += ` scale(${lerp(1.22, 1, easeOut(pin)) * lerp(1, 1.03, life)})`; }
+      else if (fx === 'win') { tf += ` perspective(2400px) rotateY(${it.ry * lerp(1, 0.55, easeInOut(life))}deg) rotateX(${it.rx * lerp(1, 0.6, life)}deg) scale(${lerp(it.s0, it.s1, easeInOut(life))}) translateY(${(1 - ein) * 30}px)`; }
+      else if (fx === 'logo') { tf += ` scale(${lerp(0.55, 1, easeOut(pin)) * lerp(1, 1.04, life)})`; filter += ` blur(${(1 - ein) * 22}px) drop-shadow(0 0 ${lerp(20, 70, ein)}px rgba(26,191,176,${0.55 + 0.15 * Math.sin(t * 2)}))`; }
+      else if (fx === 'burst') { tf += ` scale(${lerp(0.3, 1.15, easeOut(pin)) * lerp(1, 1.1, life)})`; opacity *= 0.9 + 0.1 * Math.sin(t * 1.7); }
+      else if (fx === 'flare') { tf += ` scaleX(${lerp(0.05, 1, easeOut(clamp((t - it.tin) / 0.9)))}) translateX(${lerp(-60, 60, life)}px)`; opacity *= lerp(1, 0.55, clamp((t - it.tin - 0.9) / 2)); }
+    }
+    el.style.opacity = opacity.toFixed(4);
+    el.style.transform = tf || 'none';
+    el.style.filter = filter || 'none';
+  }
+  for (const ty of typers) ty.el.textContent = t < ty.t0 ? '' : ty.text.slice(0, Math.floor((t - ty.t0) * ty.cps));
+  for (const c of cursors) {
+    const p = c.path; let x = p[0][1], y = p[0][2];
+    if (t >= p[p.length - 1][0]) { x = p[p.length - 1][1]; y = p[p.length - 1][2]; }
+    else for (let i = 0; i < p.length - 1; i++) if (t >= p[i][0] && t < p[i + 1][0]) { const k = easeInOut((t - p[i][0]) / (p[i + 1][0] - p[i][0])); x = lerp(p[i][1], p[i + 1][1], k); y = lerp(p[i][2], p[i + 1][2], k); break; }
+    c.el.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+    if (c.ripple) { let o = 0, s = 0.3; for (const ct of c.clicks) { const d = t - ct; if (d >= 0 && d < 0.45) { const k = d / 0.45; o = 1 - k; s = 0.3 + k * 1.3; } } c.ripple.style.opacity = o.toFixed(3); c.ripple.style.transform = `scale(${s.toFixed(3)})`; }
+  }
+  for (const s of scans) { const d = t - s.t0; const k = d < 0 ? 0 : ((d / 1.5) % 1); s.el.style.top = `calc(${(easeInOut(k) * 100).toFixed(2)}% - 120px)`; s.el.style.opacity = d < 0 ? 0 : 1; }
+  for (const s of scrolls) s.el.style.backgroundPosition = `0px ${(t * s.speed) % 70}px`;
+  for (const i of inlineIns) { const k = easeOut((t - i.t0) / 0.7); i.el.style.opacity = k.toFixed(3); i.el.style.filter = `blur(${((1 - k) * 12).toFixed(2)}px)`; }
+  // progress ring 35.0 → 38.2
+  { const k = easeInOut((t - 35.0) / 3.2); ring.setAttribute('stroke-dashoffset', (703.7 * (1 - k)).toFixed(2)); ringnum.textContent = `${Math.min(5, Math.floor(k * 5.0001))}/5`; }
+  // hits: flash + camera shake
+  let fl = 0, sx = 0, sy = 0;
+  for (const [ht, amp] of HITS) { const d = t - ht; if (d >= 0 && d < 0.9) { fl = Math.max(fl, amp * Math.exp(-d * 9)); const a = amp * 16 * Math.exp(-d * 6); sx += a * Math.sin(d * 61 + ht); sy += a * Math.cos(d * 47 + ht * 2); } }
+  flash.style.opacity = (fl * 0.5).toFixed(4);
+  shake.style.transform = `translate(${sx.toFixed(2)}px, ${sy.toFixed(2)}px)`;
+  // grain offset (deterministic per frame)
+  const fr = Math.round(t * 30); grain.style.transform = `translate(${((fr * 73) % 190) - 95}px, ${((fr * 131) % 190) - 95}px)`;
+  fadeout.style.opacity = clamp((t - 57.2) / 0.8).toFixed(4);
+}
+window.seek = seek; window.DURATION = DURATION;
+document.fonts.ready.then(() => { window.READY = true; if (new URLSearchParams(location.search).has('play')) { const t0 = performance.now(); const loop = () => { const t = ((performance.now() - t0) / 1000) % DURATION; seek(t); requestAnimationFrame(loop); }; loop(); } else seek(+new URLSearchParams(location.search).get('t') || 0); });
+</script>
+</body>
+</html>
