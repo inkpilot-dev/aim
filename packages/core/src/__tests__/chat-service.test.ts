@@ -104,6 +104,24 @@ describe('ChatService (end-to-end with fake CLI)', () => {
     expect(statuses).toContain('working');
   }, 20_000);
 
+  it('merges the real CLI event order without duplicating text or tool blocks', async () => {
+    const chat = svc.createChat({ cwd: dir });
+    await svc.sendMessage({ chatId: chat.id, text: 'REALORDER weather' });
+    await idle(chat.id);
+    const assistant = store.getChat(chat.id)!.messages[1];
+    expect(assistant.content.map((b) => b.type)).toEqual(['text', 'tool_use', 'text']);
+    expect(assistant.content[0]).toEqual({ type: 'text', text: 'Loading the search tool.' });
+    const tool = assistant.content[1] as ToolUseBlock;
+    expect(tool.id).toBe('tu_ts1');
+    expect(tool.input).toEqual({ query: 'select:WebSearch' });
+    expect(tool.result?.ok).toBe(true);
+    expect(tool.result?.summary).toMatch(/WebSearch/);
+    expect(assistant.content[2]).toEqual({ type: 'text', text: 'It is 24 °C and sunny.' });
+    const deltas = events.filter((e): e is Extract<ChatStreamEvent, { type: 'message.delta' }> => e.type === 'message.delta' && e.chatId === chat.id);
+    // The late delta for the finalised first block must not have been applied.
+    expect(deltas.map((d) => d.delta.text).filter(Boolean)).toEqual(['Loading the ', 'It is 24 °C and sunny.']);
+  }, 20_000);
+
   it('mirrors sub-agents and resumes the session on the next turn', async () => {
     const chat = svc.createChat({ cwd: dir });
     await svc.sendMessage({ chatId: chat.id, text: 'AGENT work' });

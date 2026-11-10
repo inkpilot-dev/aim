@@ -146,9 +146,11 @@ export function flattenToolResult(block: Pick<ApiToolResultBlock, 'content' | 'i
   if (typeof block.content === 'string') text = block.content;
   else if (Array.isArray(block.content)) {
     const parts: string[] = [];
-    for (const c of block.content) {
-      if (c.type === 'text') parts.push(c.text);
+    for (const c of block.content as Array<{ type: string; text?: string; tool_name?: string; source?: { media_type: string; data: string } }>) {
+      if (c.type === 'text' && typeof c.text === 'string') parts.push(c.text);
       else if (c.type === 'image' && c.source?.data) images.push({ mediaType: c.source.media_type, dataBase64: c.source.data });
+      else if (c.type === 'tool_reference') parts.push(`Loaded tool ${c.tool_name ?? ''}`.trim());
+      else parts.push(JSON.stringify(c));
     }
     text = parts.join('\n');
   }

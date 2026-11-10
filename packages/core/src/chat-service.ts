@@ -73,6 +73,10 @@ interface ActiveTurn {
   /** An API message segment is open once we saw message_start (or an assistant event without one). */
   segmentOpen: boolean;
   apiMessageId?: string;
+  /** Streamed block (apiMessageId:index) → index in assistant.content. */
+  keyToIdx: Map<string, number>;
+  /** Content indices whose text was finalised by a full `assistant` event; late deltas for them are ignored. */
+  finalized: Set<number>;
   turnMessages: Message[];
   stopped: boolean;
   /** Whether a `--resume` failure already triggered a fresh-session retry. */
@@ -338,6 +342,8 @@ export class ChatService {
       assistant,
       segmentBase: 0,
       segmentOpen: false,
+      keyToIdx: new Map(),
+      finalized: new Set(),
       turnMessages,
       stopped: false,
       resumeRetried: opts.resumeRetried ?? false,
@@ -421,10 +427,28 @@ export class ChatService {
   }
 
   private openSegment(turn: ActiveTurn, apiMessageId: string | undefined): void {
-    if (turn.segmentOpen && (apiMessageId === undefined || turn.apiMessageId === undefined || turn.apiMessageId === apiMessageId)) return;
+    if (turn.segmentOpen && (apiMessageId === undefined || turn.apiMessageId === undefined || turn.apiMessageId === apiMessageId)) {
+      if (apiMessageId && !turn.apiMessageId) turn.apiMessageId = apiMessageId;
+      return;
+    }
     turn.segmentBase = turn.assistant.content.length;
     turn.segmentOpen = true;
     turn.apiMessageId = apiMessageId;
+  }
+
+  private streamKey(turn: ActiveTurn, index: number): string {
+    return `${turn.apiMessageId ?? 'msg'}:${index}`;
+  }
+
+  /** Index in assistant.content for a streamed block, appending a new block when unseen. */
+  private streamIdx(turn: ActiveTurn, index: number, make: () => ContentBlock): number {
+    const key = this.streamKey(turn, index);
+    const known = turn.keyToIdx.get(key);
+    if (known !== undefined) return known;
+    const idx = turn.assistant.content.push(make()) - 1;
+    turn.keyToIdx.set(key, idx);
+    turn.dirty = true;
+    return idx;
   }
 
   private onStreamEvent(turn: ActiveTurn, ev: { type: string; [k: string]: unknown }): void {
@@ -438,94 +462,123 @@ export class ChatService {
         this.setStatus(chatId, 'thinking');
         break;
       }
+      case 'message_stop':
+        // Keep the segment open: without partial-message interleaving the full `assistant` event for this
+        // API message arrives after message_stop. The next message_start (or a different id) resets it.
+        break;
       case 'content_block_start': {
         this.openSegment(turn, turn.apiMessageId);
-        const idx = turn.segmentBase + Number(ev.index ?? 0);
         const cb = ev.content_block as ApiContentBlock | undefined;
         if (!cb) break;
-        let block: ContentBlock | undefined;
-        if (cb.type === 'text') block = { type: 'text', text: cb.text ?? '' };
-        else if (cb.type === 'thinking') block = { type: 'thinking', text: cb.thinking ?? '' };
-        else if (cb.type === 'tool_use') block = { type: 'tool_use', id: cb.id, name: cb.name, input: cb.input ?? {} };
-        if (!block) break;
-        this.setBlock(turn, idx, block);
+        let make: (() => ContentBlock) | undefined;
+        if (cb.type === 'text') make = () => ({ type: 'text', text: cb.text ?? '' });
+        else if (cb.type === 'thinking') make = () => ({ type: 'thinking', text: cb.thinking ?? '' });
+        else if (cb.type === 'tool_use') {
+          // The full `assistant` event for this block may already have arrived; reuse it by tool id.
+          const existingIdx = msg.content.findIndex((b) => b.type === 'tool_use' && b.id === cb.id);
+          if (existingIdx >= 0) {
+            turn.keyToIdx.set(this.streamKey(turn, Number(ev.index ?? 0)), existingIdx);
+            break;
+          }
+          make = () => ({ type: 'tool_use', id: cb.id, name: cb.name, input: cb.input ?? {} });
+        }
+        if (!make) break;
+        const idx = this.streamIdx(turn, Number(ev.index ?? 0), make);
+        const block = msg.content[idx];
         if (block.type === 'tool_use') this.setStatus(chatId, 'working');
         this.emit({ type: 'message.block', chatId, messageId: msg.id, blockIndex: idx, block });
         break;
       }
       case 'content_block_delta': {
-        const idx = turn.segmentBase + Number(ev.index ?? 0);
         const delta = ev.delta as { type: string; text?: string; thinking?: string; partial_json?: string } | undefined;
         if (!delta) break;
+        const index = Number(ev.index ?? 0);
         if (delta.type === 'text_delta' && typeof delta.text === 'string') {
-          const b = this.ensureBlock(turn, idx, 'text');
+          const idx = this.streamIdx(turn, index, () => ({ type: 'text', text: '' }));
+          if (turn.finalized.has(idx)) break; // the full assistant event already carried this text
+          const b = msg.content[idx];
           if (b.type === 'text') b.text += delta.text;
           this.emit({ type: 'message.delta', chatId, messageId: msg.id, blockIndex: idx, delta: { text: delta.text } });
         } else if (delta.type === 'thinking_delta' && typeof delta.thinking === 'string') {
-          const b = this.ensureBlock(turn, idx, 'thinking');
+          const idx = this.streamIdx(turn, index, () => ({ type: 'thinking', text: '' }));
+          if (turn.finalized.has(idx)) break;
+          const b = msg.content[idx];
           if (b.type === 'thinking') b.text += delta.thinking;
           this.emit({ type: 'message.delta', chatId, messageId: msg.id, blockIndex: idx, delta: { thinking: delta.thinking } });
         } else if (delta.type === 'input_json_delta' && typeof delta.partial_json === 'string') {
-          this.emit({ type: 'message.delta', chatId, messageId: msg.id, blockIndex: idx, delta: { partialJson: delta.partial_json } });
+          const idx = turn.keyToIdx.get(this.streamKey(turn, index));
+          if (idx !== undefined) this.emit({ type: 'message.delta', chatId, messageId: msg.id, blockIndex: idx, delta: { partialJson: delta.partial_json } });
         }
         turn.dirty = true;
         break;
       }
-      case 'message_stop':
-        // The full `assistant` event follows and reconciles the segment.
-        break;
       default:
         break;
     }
   }
 
-  private ensureBlock(turn: ActiveTurn, idx: number, type: 'text' | 'thinking'): ContentBlock {
-    const existing = turn.assistant.content[idx];
-    if (existing) return existing;
-    const block: ContentBlock = { type, text: '' };
-    this.setBlock(turn, idx, block);
-    this.emit({ type: 'message.block', chatId: turn.chatId, messageId: turn.assistant.id, blockIndex: idx, block });
-    return block;
-  }
 
-  private setBlock(turn: ActiveTurn, idx: number, block: ContentBlock): void {
-    const content = turn.assistant.content;
-    while (content.length < idx) content.push({ type: 'text', text: '' });
-    content[idx] = block;
-    turn.dirty = true;
-  }
 
-  /** Full assistant message: reconciles streamed blocks with the final content and emits tool_use blocks. */
+  /**
+   * Full assistant content. The CLI emits one `assistant` event per content block (interleaved with the
+   * stream, sometimes before the block's last deltas) or, without partial messages, one event with every
+   * block. Blocks are matched by identity — tool_use by id, text/thinking by prefix within the current API
+   * message — so nothing is duplicated whichever order the events arrive in.
+   */
   private onAssistantMessage(turn: ActiveTurn, apiMessageId: string | undefined, blocks: ApiContentBlock[]): void {
     const { chatId } = turn;
+    if (apiMessageId && turn.apiMessageId && apiMessageId !== turn.apiMessageId) turn.segmentOpen = false;
     this.openSegment(turn, apiMessageId);
-    blocks.forEach((cb, i) => {
-      const idx = turn.segmentBase + i;
-      const existing = turn.assistant.content[idx];
-      if (cb.type === 'text') {
-        const changed = !existing || existing.type !== 'text' || existing.text !== cb.text;
-        if (changed) {
-          this.setBlock(turn, idx, { type: 'text', text: cb.text });
-          this.emit({ type: 'message.block', chatId, messageId: turn.assistant.id, blockIndex: idx, block: turn.assistant.content[idx] });
+    const content = turn.assistant.content;
+    const emitBlock = (idx: number) => this.emit({ type: 'message.block', chatId, messageId: turn.assistant.id, blockIndex: idx, block: content[idx] });
+
+    for (const cb of blocks) {
+      if (cb.type === 'tool_use') {
+        const idx = content.findIndex((b) => b.type === 'tool_use' && b.id === cb.id);
+        if (idx >= 0) {
+          const prev = content[idx] as ToolUseBlock;
+          content[idx] = { ...prev, name: cb.name, input: cb.input };
+        } else {
+          content.push({ type: 'tool_use', id: cb.id, name: cb.name, input: cb.input });
         }
-      } else if (cb.type === 'thinking') {
-        const changed = !existing || existing.type !== 'thinking' || existing.text !== cb.thinking;
-        if (changed) {
-          this.setBlock(turn, idx, { type: 'thinking', text: cb.thinking });
-          this.emit({ type: 'message.block', chatId, messageId: turn.assistant.id, blockIndex: idx, block: turn.assistant.content[idx] });
-        }
-      } else if (cb.type === 'tool_use') {
-        const prev = existing && existing.type === 'tool_use' && existing.id === cb.id ? existing : undefined;
-        const block: ToolUseBlock = { type: 'tool_use', id: cb.id, name: cb.name, input: cb.input };
-        if (prev?.result) block.result = prev.result;
-        this.setBlock(turn, idx, block);
+        const at = idx >= 0 ? idx : content.length - 1;
+        turn.finalized.add(at);
+        turn.dirty = true;
         this.setStatus(chatId, 'working');
-        this.emit({ type: 'message.block', chatId, messageId: turn.assistant.id, blockIndex: idx, block });
+        emitBlock(at);
+        continue;
       }
-    });
-    // The segment is complete; the next API message starts a new one.
-    turn.segmentOpen = false;
-    turn.apiMessageId = undefined;
+      if (cb.type !== 'text' && cb.type !== 'thinking') continue;
+      const text = cb.type === 'text' ? cb.text : cb.thinking;
+      // Prefer the latest unfinalised streamed block of the same type in this API message whose text is a
+      // prefix of the final text (or empty); an identical finalised block means we already have it.
+      let target = -1;
+      for (let i = content.length - 1; i >= turn.segmentBase; i--) {
+        const b = content[i];
+        if (b.type !== cb.type) continue;
+        if (turn.finalized.has(i)) {
+          if (b.text === text) {
+            target = -2;
+            break;
+          }
+          continue;
+        }
+        if (b.text === '' || text.startsWith(b.text) || b.text.startsWith(text)) {
+          target = i;
+          break;
+        }
+      }
+      if (target === -2) continue;
+      if (target >= 0) {
+        content[target] = { type: cb.type, text };
+      } else {
+        content.push({ type: cb.type, text });
+        target = content.length - 1;
+      }
+      turn.finalized.add(target);
+      turn.dirty = true;
+      emitBlock(target);
+    }
     this.persist(turn);
   }
 

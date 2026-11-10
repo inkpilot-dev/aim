@@ -94,3 +94,7 @@ See [UPDATES.md](UPDATES.md) for the update flow and its error messages. In shor
 ## "Error: Electron uninstall" when starting `pnpm dev`
 
 pnpm 10 and newer block package install scripts unless they are approved, so the `electron` package can be present without its downloaded executable. `pnpm dev` and `pnpm build` now run `scripts/ensure-electron.mjs`, which downloads it when missing. To do it by hand: `node node_modules/electron/install.js`, or run `pnpm approve-builds`, select `electron`, `better-sqlite3` and `@nut-tree-fork/libnut-win32`, then `pnpm install` again.
+
+## Repeated "Tool search" calls or a reply shown twice
+
+Fixed in 0.1.3. A.I.M. now loads every tool up front (`ENABLE_TOOL_SEARCH=false` for the CLI process), so the model no longer has to call ToolSearch before using a tool, and streamed replies are merged by block identity so text and tool calls appear exactly once.

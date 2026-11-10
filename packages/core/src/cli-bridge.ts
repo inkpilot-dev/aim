@@ -433,6 +433,9 @@ export class ClaudeCliBridge implements OneShotRunner {
     // Keep the CLI from trying to open a browser / IDE and avoid nested-session confusion.
     delete env.CLAUDECODE;
     delete env.CLAUDE_CODE_ENTRYPOINT;
+    // Load every tool up front. With deferred tool search the model must call ToolSearch before each
+    // deferred tool, which in headless sessions produced long loops of ToolSearch calls.
+    if (!env.ENABLE_TOOL_SEARCH) env.ENABLE_TOOL_SEARCH = 'false';
     const spawnOpts: SpawnOptions = { cwd: opts.cwd || homeDir(), env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true };
     let child: ChildProcess;
     if (cmd.shell) {

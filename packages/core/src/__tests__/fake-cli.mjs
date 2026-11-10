@@ -113,6 +113,36 @@ if (outputFormat === 'json') {
       out({ type: 'result', subtype: 'error_during_execution', is_error: true, session_id: sessionId, result: 'Tool exploded: browser_click failed', duration_ms: 3, num_turns: 1, total_cost_usd: 0.001 });
       return;
     }
+    if (text.includes('REALORDER')) {
+      // Mirrors claude 2.1.x with --include-partial-messages: one `assistant` event per block, interleaved
+      // with the stream, the text event arriving BEFORE the block's last delta; tool_result with a
+      // `tool_reference` payload; then a second API message with the final text.
+      const m1 = 'msg_real1';
+      const se = (event) => out({ type: 'stream_event', session_id: sessionId, parent_tool_use_id: null, event });
+      se({ type: 'message_start', message: { id: m1, role: 'assistant', content: [] } });
+      se({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
+      se({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Loading the ' } });
+      out({ type: 'assistant', session_id: sessionId, parent_tool_use_id: null, message: { id: m1, role: 'assistant', content: [{ type: 'text', text: 'Loading the search tool.' }] } });
+      se({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'search tool.' } });
+      se({ type: 'content_block_stop', index: 0 });
+      se({ type: 'content_block_start', index: 1, content_block: { type: 'tool_use', id: 'tu_ts1', name: 'ToolSearch', input: {} } });
+      se({ type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '{"query":"select:WebSearch"}' } });
+      out({ type: 'assistant', session_id: sessionId, parent_tool_use_id: null, message: { id: m1, role: 'assistant', content: [{ type: 'tool_use', id: 'tu_ts1', name: 'ToolSearch', input: { query: 'select:WebSearch' } }] } });
+      se({ type: 'content_block_stop', index: 1 });
+      out({ type: 'user', session_id: sessionId, parent_tool_use_id: null, message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu_ts1', content: [{ type: 'tool_reference', tool_name: 'WebSearch' }] }] } });
+      se({ type: 'message_delta', delta: {}, usage: {} });
+      se({ type: 'message_stop' });
+      await sleep(5);
+      const m2 = 'msg_real2';
+      se({ type: 'message_start', message: { id: m2, role: 'assistant', content: [] } });
+      se({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
+      se({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'It is 24 °C and sunny.' } });
+      out({ type: 'assistant', session_id: sessionId, parent_tool_use_id: null, message: { id: m2, role: 'assistant', content: [{ type: 'text', text: 'It is 24 °C and sunny.' }] } });
+      se({ type: 'content_block_stop', index: 0 });
+      se({ type: 'message_stop' });
+      result({ result: 'It is 24 °C and sunny.' });
+      return;
+    }
     if (text.includes('TOOL')) {
       out({
         type: 'assistant',
