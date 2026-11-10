@@ -329,7 +329,16 @@ async function buildCoreServices(ctx: AppContext, core: typeof Core): Promise<Co
       if (!settings.get().reflectionEnabled) return;
       try {
         const r = await reflector.reflect(chat, turnMessages);
-        if (r.memories.length) emitGlobal({ type: 'memory.updated', count: memory.count() });
+        if (r.memories.length) {
+          emitGlobal({ type: 'memory.updated', count: memory.count() });
+          const last = [...turnMessages].reverse().find((m) => m.role === 'assistant');
+          // Reflection memories that the model did not already announce through memory_remember.
+          const announced = new Set(
+            turnMessages.flatMap((m) => m.content.filter((b) => b.type === 'tool_use' && /memory_remember$/.test(b.name)).map((b) => String((b.type === 'tool_use' && (b.input as { key?: string })?.key) ?? ''))),
+          );
+          const fresh = r.memories.filter((m) => !announced.has(m.key));
+          if (last && fresh.length) chatService.addLearnedNote(chat.id, last.id, fresh.map((m) => ({ key: m.key, value: m.value })));
+        }
         if (r.chatTitle && (!chat.title || /^new chat$/i.test(chat.title.trim()))) chatService.renameChat(chat.id, r.chatTitle);
       } catch (err) {
         log.warn(`reflection failed: ${(err as Error).message}`);

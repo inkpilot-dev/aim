@@ -864,3 +864,28 @@
   box-shadow: none;
   outline: none;
 }
+
+/* "Learned …" note */
+.learned-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.learned-note strong {
+  color: var(--accent);
+  font-weight: 600;
+  margin-right: 2px;
+}
+.learned-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 7px;
+  flex: none;
+}

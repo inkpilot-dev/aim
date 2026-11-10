@@ -596,6 +596,25 @@ export class ChatService {
     }
   }
 
+  /**
+   * Appends a short "Learned: …" note to an assistant message (used after post-turn reflection) so the
+   * user sees what A.I.M. picked up, in one or two sentences.
+   */
+  addLearnedNote(chatId: string, messageId: string, items: { key: string; value: string }[]): void {
+    if (!items.length) return;
+    const chat = this.store.getChat(chatId);
+    const msg = chat?.messages.find((m) => m.id === messageId && m.role === 'assistant');
+    if (!chat || !msg) return;
+    const text = `Learned: ${items
+      .slice(0, 2)
+      .map((i) => i.value.trim().replace(/\s+/g, ' ').replace(/\.$/, ''))
+      .join('. ')}.`;
+    if (msg.content.some((b) => b.type === 'status' && b.text === text)) return;
+    msg.content.push({ type: 'status', text });
+    this.store.updateMessage(msg);
+    this.emit({ type: 'message.block', chatId, messageId, blockIndex: msg.content.length - 1, block: msg.content[msg.content.length - 1] });
+  }
+
   private persist(turn: ActiveTurn, force = false): void {
     if (!turn.dirty && !force) return;
     try {

@@ -166,9 +166,17 @@ export class Scheduler {
       const settings = this.o.settings();
       if (!settings.dailyGoalsEnabled) return;
       const now = this.now();
-      if (!isPastTime(settings.dailyGoalsTime || DEFAULT_DAILY_GOALS_TIME, now)) return;
-      if (this.o.planner.existingPlan(todayISO(now))) return;
-      await this.runDaily('catch-up');
+      // Independent operation: when A.I.M. starts, make sure today has a plan and that planned goals run,
+      // whatever the clock says. The scheduled time still re-plans each day.
+      const existing = this.o.planner.existingPlan(todayISO(now));
+      if (!existing) {
+        await this.runDaily('startup');
+        return;
+      }
+      if (settings.autoRunGoals && existing.goals.some((g) => g.status === 'planned')) {
+        this.log.info('startup: running planned goals');
+        await this.o.runner.runPending(existing.date);
+      }
     } catch (e) {
       this.log.error('catch-up failed', errorMessage(e));
     }

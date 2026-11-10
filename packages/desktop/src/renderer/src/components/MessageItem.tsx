@@ -77,12 +77,35 @@ function ThinkingRow({ text }: { text: string }) {
 }
 
 function StatusNotice({ text }: { text: string }) {
+  if (/^Learned:/.test(text)) return <LearnedNote text={text.replace(/^Learned:\s*/, '')} />;
   return (
     <div className="inline-notice">
       <IconWrench size={13} />
       <span>{text}</span>
     </div>
   );
+}
+
+/** One quiet line telling the user what A.I.M. just learned. */
+function LearnedNote({ text }: { text: string }) {
+  return (
+    <div className="learned-note" title="Stored in Memory">
+      <span className="learned-dot" />
+      <span>
+        <strong>Learned</strong> {text}
+      </span>
+    </div>
+  );
+}
+
+function isLearnBlock(b: ContentBlock): boolean {
+  return (b.type === 'tool_use' && /memory_remember$/.test(b.name)) || (b.type === 'status' && /^Learned:/.test(b.text));
+}
+
+function learnedText(b: ToolUseBlock): string {
+  const input = b.input as { value?: unknown } | undefined;
+  const v = typeof input?.value === 'string' ? input.value.trim() : '';
+  return v || 'a new detail about you';
 }
 
 function textOf(content: ContentBlock[]): string {
@@ -175,6 +198,7 @@ export const MessageItem = memo(function MessageItem({ message, agents, showThin
       case 'text':
         return <StreamingText key={i} text={b.text} live={streaming && isLast} />;
       case 'tool_use':
+        if (isLearnBlock(b)) return <LearnedNote key={b.id || i} text={learnedText(b)} />;
         return <ToolUseRow key={b.id || i} block={b} agentName={agentName(b.agentId)} />;
       case 'thinking':
         return <ThinkingRow key={i} text={b.text} />;
@@ -189,7 +213,7 @@ export const MessageItem = memo(function MessageItem({ message, agents, showThin
   // Split into text and runs of "work" (tool calls, thinking, status) so the work can collapse to one line.
   const segments: { kind: 'text' | 'work'; items: { item: RenderItem; index: number }[] }[] = [];
   items.forEach((item, index) => {
-    const isWork = item.kind === 'group' || (item.block.type !== 'text' && item.block.type !== 'image');
+    const isWork = item.kind === 'group' || (item.block.type !== 'text' && item.block.type !== 'image' && !isLearnBlock(item.block));
     const kind = isWork ? 'work' : 'text';
     const last = segments[segments.length - 1];
     if (last && last.kind === kind) last.items.push({ item, index });

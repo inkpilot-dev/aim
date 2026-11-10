@@ -1,6 +1,6 @@
 /** memory_* / behavior_summary / goals_list / goals_update → learning stores (from @aim/core). */
 import type { BehaviorObserver, DirectiveStore, GoalStore, MemoryStore } from '@aim/core';
-import type { Goal, MemoryKind } from '@aim/shared';
+import { newId, todayISO, type Goal, type MemoryKind } from '@aim/shared';
 import type { ToolImpl } from './tool-router.js';
 
 export interface MemoryToolDeps {
@@ -92,5 +92,32 @@ export function createMemoryTools(deps: MemoryToolDeps): Record<string, ToolImpl
     return { ok: true, text: `Goal "${goal.title}" is now ${goal.status}.`, data: goal };
   };
 
-  return { memory_remember, memory_recall, memory_forget, behavior_summary, goals_list, goals_update };
+  const goals_add: ToolImpl = async (args) => {
+    const g = deps.goals();
+    if (!g) return { ok: false, error: 'Goals are unavailable (core failed to start).' };
+    const title = String(args['title'] ?? '').trim();
+    const rationale = String(args['rationale'] ?? '').trim();
+    if (!title) return { ok: false, error: 'title is required.' };
+    const date = typeof args['date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(args['date'] as string) ? (args['date'] as string) : todayISO();
+    const p = Number(args['priority']);
+    const priority = (p === 1 || p === 2 || p === 3 ? p : 2) as 1 | 2 | 3;
+    const effort = args['effort'] === 'small' || args['effort'] === 'large' ? (args['effort'] as Goal['effort']) : 'medium';
+    const now = Date.now();
+    const goal = g.upsert({ id: newId('goal'), date, title, rationale, status: 'planned', priority, effort, directiveId: typeof args['directiveId'] === 'string' ? (args['directiveId'] as string) : undefined, createdAt: now, updatedAt: now, scheduledAt: now });
+    deps.onGoalsChanged?.();
+    return { ok: true, text: `Goal added for ${date}: "${goal.title}" (${goal.id}). A.I.M. will pursue it on its own.`, data: goal };
+  };
+
+  const directives_add: ToolImpl = async (args) => {
+    const d = deps.directives();
+    if (!d) return { ok: false, error: 'Directives are unavailable (core failed to start).' };
+    const text = String(args['text'] ?? '').trim();
+    if (!text) return { ok: false, error: 'text is required.' };
+    const p = Number(args['priority']);
+    const directive = d.add(text, (p === 1 || p === 2 || p === 3 ? p : 2) as 1 | 2 | 3);
+    deps.onGoalsChanged?.();
+    return { ok: true, text: `Standing directive recorded: "${directive.text}" (${directive.id}). Daily goals will be planned from it.`, data: directive };
+  };
+
+  return { memory_remember, memory_recall, memory_forget, behavior_summary, goals_list, goals_update, goals_add, directives_add };
 }

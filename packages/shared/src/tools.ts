@@ -161,13 +161,13 @@ export const AIM_TOOLS: ToolDefinition[] = [
   {
     name: 'browser_tabs',
     category: 'browser',
-    description: 'List open tabs: tabId, windowId, title, url, active, audible. Prefer reusing an existing window — never open a new browser window; open new TABS instead.',
+    description: 'List open tabs: tabId, windowId, title, url, active, audible. The tab marked active is the one the user is on — work there by default. Never open a new browser window.',
     inputSchema: obj({}),
   },
   {
     name: 'browser_open_tab',
     category: 'browser',
-    description: 'Open a URL in a NEW TAB of the existing browser window, in the background by default so the user is not interrupted. Returns the tabId. Use this instead of app_launch for web tasks.',
+    description: 'Open a URL in a NEW TAB of the existing browser window (background by default). Use only for research that must not disturb the page the user is on, or when the task truly needs a separate page; otherwise work in the user\'s current tab (browser_tabs → active). Returns the tabId.',
     inputSchema: obj({ url: str('http(s) URL'), active: bool('focus the tab (default false — stay out of the user\'s way)'), windowId: int('target window; default = last focused') }, ['url']),
   },
   {
@@ -320,6 +320,18 @@ export const AIM_TOOLS: ToolDefinition[] = [
     category: 'tasks',
     description: 'List standing directives (what the user told AIM to pursue) and current/recent goals with status.',
     inputSchema: obj({ includeDone: bool('') }),
+  },
+  {
+    name: 'goals_add',
+    category: 'tasks',
+    description: 'Create a goal A.I.M. will pursue on its own: today (run as soon as possible) or on a later date. Use it to commit to follow-ups ("check this again tomorrow", "finish the remaining items tonight") or when the user asks A.I.M. to take something on.',
+    inputSchema: obj({ title: str('short, user-facing goal'), rationale: str('why it matters / what done looks like'), date: str('YYYY-MM-DD; default today'), priority: int('1 = highest, 3 = lowest (default 2)'), effort: { type: 'string', enum: ['small', 'medium', 'large'] }, directiveId: str('standing directive this serves, if any') }, ['title', 'rationale']),
+  },
+  {
+    name: 'directives_add',
+    category: 'tasks',
+    description: 'Record a standing directive — something the user wants A.I.M. to keep pursuing over time ("keep my Downloads organised", "find ML internships weekly"). Daily goals are planned from directives. Only add what the user clearly asked for or confirmed.',
+    inputSchema: obj({ text: str(''), priority: int('1 = highest, 3 = lowest (default 2)') }, ['text']),
   },
   {
     name: 'goals_update',

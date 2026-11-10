@@ -119,6 +119,29 @@ export function MemoryView() {
     }
   };
 
+  const [details, setDetails] = useState(false);
+  const knows = useMemo(() => {
+    const sentence = (v: string) => {
+      const t = v.trim().replace(/\s+/g, ' ');
+      return t ? t.charAt(0).toUpperCase() + t.slice(1).replace(/[.]+$/, '') + '.' : '';
+    };
+    const score = (m: MemoryEntry) => m.confidence * (1 + Math.log1p(m.hits)) + m.updatedAt / 1e14;
+    const pick = (kinds: MemoryKind[], n: number) =>
+      entries
+        .filter((m) => kinds.includes(m.kind))
+        .sort((a, b) => score(b) - score(a))
+        .slice(0, n)
+        .map((m) => sentence(m.value))
+        .filter(Boolean);
+    const groups: { title: string; items: string[] }[] = [
+      { title: 'About you', items: pick(['preference', 'fact'], 6) },
+      { title: 'How things work', items: pick(['procedure', 'lesson'], 5) },
+      { title: 'What worked for your goals', items: pick(['goal_feedback'], 3) },
+      { title: 'Your routines', items: (summary?.routines ?? []).slice(0, 4).map(sentence) },
+    ];
+    return groups.filter((g) => g.items.length);
+  }, [entries, summary]);
+
   const counts = useMemo(() => {
     const c: Partial<Record<MemoryKind, number>> = {};
     entries.forEach((e) => (c[e.kind] = (c[e.kind] ?? 0) + 1));
@@ -129,8 +152,40 @@ export function MemoryView() {
     <div className="view">
       <div className="view-inner">
         <h1 className="view-title">Memory</h1>
-        <p className="view-sub">What A.I.M. has learned about you and your work. Memories are added to every conversation's context.</p>
+        <p className="view-sub">A plain summary of what A.I.M. has learned about you and how your things work. Everything here is used in every conversation.</p>
 
+        <section className="section">
+          <div className="section-head">
+            <span className="section-title">What A.I.M. knows</span>
+            <span className="small faint">{entries.length ? `${entries.length} memor${entries.length === 1 ? 'y' : 'ies'}` : ''}</span>
+          </div>
+          {!entries.length && !(summary?.routines.length ?? 0) ? (
+            <div className="empty">Nothing yet. A.I.M. learns from the conversations you have and from what it observes, and notes each new thing in the chat as it happens.</div>
+          ) : (
+            <div className="knows">
+              {knows.map((group) => (
+                <div key={group.title} className="knows-group">
+                  <div className="knows-title">{group.title}</div>
+                  <ul className="knows-list">
+                    {group.items.map((t, idx) => (
+                      <li key={idx} className="selectable">
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="row" style={{ marginTop: 14 }}>
+            <button className="btn sm" onClick={() => setDetails((d) => !d)}>
+              {details ? 'Hide details' : `Show all memories and activity`}
+            </button>
+          </div>
+        </section>
+
+        {details ? (
+          <>
         <section className="section">
           <div className="section-head">
             <span className="section-title">Memories ({entries.length})</span>
@@ -266,6 +321,8 @@ export function MemoryView() {
             <div className="empty">{state.settings?.observerEnabled === false ? 'The behaviour observer is turned off in Settings.' : 'No behaviour data yet.'}</div>
           )}
         </section>
+          </>
+        ) : null}
       </div>
     </div>
   );

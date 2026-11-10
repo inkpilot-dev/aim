@@ -54,28 +54,33 @@ describe('Scheduler', () => {
     expect(s.started).toBe(false);
   });
 
-  it('does not catch up when a plan exists, before the time, or when disabled', async () => {
+  it('on start: runs the planned goals of an existing plan, plans even before the scheduled time, and stays idle when disabled', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 10, 9, 10, 0, 0));
+    // Existing plan with a planned goal → no re-plan, but the goal runs.
     const a = fakes(true);
     const s1 = new Scheduler({ planner: a.planner, runner: a.runner, settings: settingsOf({ dailyGoalsTime: '08:00' }), catchUpDelayMs: 10 });
     s1.start();
     await vi.advanceTimersByTimeAsync(20);
     expect(a.planner.planToday).not.toHaveBeenCalled();
+    expect(a.runner.runPending).toHaveBeenCalledWith('2026-11-09');
     s1.stop();
 
+    // No plan yet and the scheduled time is still ahead → plan now anyway (A.I.M. is independent from launch).
     const b = fakes(false);
     const s2 = new Scheduler({ planner: b.planner, runner: b.runner, settings: settingsOf({ dailyGoalsTime: '23:00' }), catchUpDelayMs: 10 });
     s2.start();
     await vi.advanceTimersByTimeAsync(20);
-    expect(b.planner.planToday).not.toHaveBeenCalled();
+    expect(b.planner.planToday).toHaveBeenCalledTimes(1);
     s2.stop();
 
+    // Daily goals disabled → nothing happens.
     const c = fakes(false);
     const s3 = new Scheduler({ planner: c.planner, runner: c.runner, settings: settingsOf({ dailyGoalsTime: '08:00', dailyGoalsEnabled: false }), catchUpDelayMs: 10 });
     s3.start();
     await vi.advanceTimersByTimeAsync(20);
     expect(c.planner.planToday).not.toHaveBeenCalled();
+    expect(c.runner.runPending).not.toHaveBeenCalled();
     s3.stop();
   });
 

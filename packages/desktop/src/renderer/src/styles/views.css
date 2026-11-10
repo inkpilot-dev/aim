@@ -426,3 +426,27 @@
     width: 100%;
   }
 }
+
+/* Memory: plain-language summary */
+.knows {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.knows-title {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin-bottom: 6px;
+}
+.knows-list {
+  margin: 0;
+  padding-left: 18px;
+  font-family: var(--font-serif);
+  font-size: var(--fs-lg);
+  line-height: 1.65;
+}
+.knows-list li + li {
+  margin-top: 4px;
+}

@@ -98,3 +98,15 @@ Additional shortcuts are listed in the application's Settings.
 ## Tool activity
 
 By default each run of tool calls inside a reply is collapsed into one line such as "Worked · 6 steps · 7.4s" (with a count of failed steps when any). Click the line to expand it, or use "Show work" in the top bar to see every tool call inline. Settings → Tool activity offers three modes: one line per run (default), show every call, or hide completely (only a small "Working" indicator while A.I.M. is busy). Replies type out smoothly as they stream.
+
+## Working in your current tab
+
+A.I.M. works in the tab you are on when the request concerns that page or site (a form, a test, a dashboard). It opens a new background tab only for research that should not disturb your page, or when a task genuinely needs a separate page, and it never navigates your current tab away from what you were doing unless the task is about that page.
+
+## Learned notes
+
+Whenever A.I.M. stores something about you or about how your things work, a one-line "Learned …" note appears in the conversation, so you always know what it remembered. The Memory page opens with a plain-language summary ("About you", "How things work", "Your routines"); the full list and activity charts are behind "Show all memories and activity".
+
+## Independent goals
+
+Each time A.I.M. starts it makes sure today has a plan: if there is none it plans goals from your directives, memory and recent activity, and if planned goals are waiting it starts them. During a conversation A.I.M. can also commit to follow-ups itself (a goal for today or a later date) and record standing directives you state, then pursue them without being asked.
