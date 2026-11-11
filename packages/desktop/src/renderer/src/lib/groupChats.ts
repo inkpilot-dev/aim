@@ -20,6 +20,25 @@ const LABELS: Record<ChatGroupKey, string> = {
 
 const ORDER: ChatGroupKey[] = ['pinned', 'today', 'yesterday', 'week', 'older', 'archived'];
 
+/** Chats A.I.M. started on its own (daily goals, follow-ups) rather than the user. */
+export function isAimChat(c: Chat): boolean {
+  return c.origin === 'goal' || c.origin === 'system';
+}
+
+/** Splits the list into the user's chats and A.I.M.'s. Starred chats stay with the user's, wherever they came from. */
+export function splitChats(chats: Chat[]): { mine: Chat[]; aim: Chat[] } {
+  const mine: Chat[] = [];
+  const aim: Chat[] = [];
+  for (const c of chats) (isAimChat(c) && !c.pinned ? aim : mine).push(c);
+  return { mine, aim };
+}
+
+/** Goal chats are titled "Goal — …"; inside A.I.M.'s section the prefix is noise. */
+export function displayTitle(c: Chat): string {
+  const t = c.title || 'Untitled';
+  return isAimChat(c) ? t.replace(/^Goal\s+[—-]\s+/, '') : t;
+}
+
 export function groupChats(chats: Chat[], now = Date.now(), opts: { includeArchived?: boolean } = {}): ChatGroup[] {
   const todayStart = startOfDay(now);
   const yesterdayStart = todayStart - 86_400_000;

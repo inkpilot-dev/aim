@@ -16,6 +16,7 @@ interface GoalRow {
   created_at: number;
   updated_at: number;
   scheduled_at: number | null;
+  origin?: string | null;
 }
 interface PlanRow {
   date: string;
@@ -28,7 +29,15 @@ const EFFORTS: readonly Goal['effort'][] = ['small', 'medium', 'large'];
 
 /** Goals (keyed by id, indexed by date) and the per-day plan summary. */
 export class GoalStore {
-  constructor(private readonly db: SqliteDb) {}
+  constructor(private readonly db: SqliteDb) {
+    // Databases created before goals had an origin get the column added in place.
+    try {
+      const cols = this.db.prepare('PRAGMA table_info(goals)').all() as { name: string }[];
+      if (cols.length && !cols.some((c) => c.name === 'origin')) this.db.exec('ALTER TABLE goals ADD COLUMN origin TEXT');
+    } catch {
+      /* table missing or read-only: origin is simply not persisted */
+    }
+  }
 
   /**
    * List goals, optionally for one date. `includeDone` (default true) — when false, goals with status
@@ -55,12 +64,12 @@ export class GoalStore {
     const goal = normalizeGoal(g);
     this.db
       .prepare(
-        `INSERT INTO goals (id, date, title, rationale, directive_id, status, priority, effort, chat_id, notes, created_at, updated_at, scheduled_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO goals (id, date, title, rationale, directive_id, status, priority, effort, chat_id, notes, created_at, updated_at, scheduled_at, origin)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET date = excluded.date, title = excluded.title, rationale = excluded.rationale,
            directive_id = excluded.directive_id, status = excluded.status, priority = excluded.priority, effort = excluded.effort,
            chat_id = excluded.chat_id, notes = excluded.notes, created_at = excluded.created_at, updated_at = excluded.updated_at,
-           scheduled_at = excluded.scheduled_at`,
+           scheduled_at = excluded.scheduled_at, origin = COALESCE(excluded.origin, goals.origin)`,
       )
       .run(
         goal.id,
@@ -76,6 +85,7 @@ export class GoalStore {
         goal.createdAt,
         goal.updatedAt,
         goal.scheduledAt ?? null,
+        goal.origin ?? null,
       );
     return goal;
   }
@@ -154,6 +164,7 @@ function normalizeGoal(g: Goal): Goal {
   if (g.chatId) goal.chatId = g.chatId;
   if (g.notes) goal.notes = g.notes;
   if (typeof g.scheduledAt === 'number') goal.scheduledAt = g.scheduledAt;
+  if (g.origin === 'user' || g.origin === 'aim') goal.origin = g.origin;
   return goal;
 }
 
@@ -179,5 +190,6 @@ function rowToGoal(r: GoalRow): Goal {
   if (r.chat_id) g.chatId = r.chat_id;
   if (r.notes) g.notes = r.notes;
   if (r.scheduled_at !== null && r.scheduled_at !== undefined) g.scheduledAt = Number(r.scheduled_at);
+  if (r.origin === 'user' || r.origin === 'aim') g.origin = r.origin;
   return g;
 }

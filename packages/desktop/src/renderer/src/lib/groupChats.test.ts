@@ -47,3 +47,22 @@ describe('groupChats', () => {
     expect(groupChats([], NOW)).toEqual([]);
   });
 });
+
+import { splitChats, displayTitle } from './groupChats';
+
+describe('splitChats', () => {
+  const base = { createdAt: 1, updatedAt: 1, status: 'idle' as const };
+  it("separates the user's chats from chats A.I.M. started, keeping starred chats with the user's", () => {
+    const chats = [
+      { ...base, id: 'u', title: 'Mine', origin: 'user' as const },
+      { ...base, id: 'g', title: 'Goal — Tidy Downloads', origin: 'goal' as const },
+      { ...base, id: 's', title: 'System', origin: 'system' as const },
+      { ...base, id: 'gp', title: 'Goal — Starred', origin: 'goal' as const, pinned: true },
+    ];
+    const { mine, aim } = splitChats(chats);
+    expect(mine.map((c) => c.id)).toEqual(['u', 'gp']);
+    expect(aim.map((c) => c.id)).toEqual(['g', 's']);
+    expect(displayTitle(chats[1])).toBe('Tidy Downloads');
+    expect(displayTitle(chats[0])).toBe('Mine');
+  });
+});

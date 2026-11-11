@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Chat, ChatStatus } from '@aim/shared';
-import { groupChats } from '../lib/groupChats';
+import { displayTitle, groupChats, splitChats, type ChatGroup } from '../lib/groupChats';
 import { useStore } from '../state/store';
 import { ProgressRing } from './ProgressRing';
-import { IconArchive, IconEdit, IconMore, IconPin, IconTrash } from './Icons';
+import { IconArchive, IconChevronRight, IconEdit, IconMore, IconPin, IconTrash } from './Icons';
 
 const STATUS_DOT: Partial<Record<ChatStatus, string>> = {
   waiting_user: 'warning',
@@ -53,16 +53,32 @@ export function ChatList({ chats, searchActive }: { chats: Chat[]; searchActive:
     setRenaming(null);
   };
 
-  const groups = groupChats(chats, Date.now(), { includeArchived: true });
+  const { mine, aim } = splitChats(chats);
+  const now = Date.now();
+  const myGroups = groupChats(mine, now, { includeArchived: true });
+  const aimGroups = groupChats(aim, now, { includeArchived: true });
+  const aimRunning = aim.filter((c) => c.status === 'thinking' || c.status === 'working').length;
   const menuChat = menu ? chats.find((c) => c.id === menu.chatId) : null;
 
-  if (!chats.length) {
-    return <div className="chat-list-empty">{searchActive ? 'No chats match your search.' : 'No chats yet. Start one above.'}</div>;
-  }
+  const [aimOpen, setAimOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('aim.ui.aimChatsOpen') !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const toggleAim = () =>
+    setAimOpen((o) => {
+      try {
+        localStorage.setItem('aim.ui.aimChatsOpen', o ? '0' : '1');
+      } catch {
+        /* private mode */
+      }
+      return !o;
+    });
 
-  return (
-    <div className="chat-list">
-      {groups.map((g) => (
+  const renderGroups = (groups: ChatGroup[]) =>
+    groups.map((g) => (
         <div key={g.key}>
           <div className="chat-group-label">{searchActive && g.key !== 'pinned' ? 'Results' : g.key === 'pinned' ? 'Starred' : g.label}</div>
           {g.chats.map((c) => {
@@ -98,7 +114,7 @@ export function ChatList({ chats, searchActive }: { chats: Chat[]; searchActive:
                       aria-label="Rename chat"
                     />
                   ) : (
-                    c.title || 'Untitled'
+                    displayTitle(c)
                   )}
                 </div>
                 <div className="row-meta">
@@ -113,7 +129,25 @@ export function ChatList({ chats, searchActive }: { chats: Chat[]; searchActive:
             );
           })}
         </div>
-      ))}
+      ))
+
+  if (!chats.length) {
+    return <div className="chat-list-empty">{searchActive ? 'No chats match your search.' : 'No chats yet. Start one above.'}</div>;
+  }
+
+  return (
+    <div className="chat-list">
+      {myGroups.length ? renderGroups(myGroups) : aim.length ? <div className="chat-list-empty">{searchActive ? 'None of your chats match.' : 'Your chats appear here.'}</div> : null}
+      {aim.length ? (
+        <div className="aim-section">
+          <button className={`aim-section-head ${aimOpen ? 'open' : ''}`} onClick={toggleAim} aria-expanded={aimOpen}>
+            <IconChevronRight className="chev" size={13} />
+            <span>Started by A.I.M.</span>
+            <span className="faint">{aimRunning ? `${aimRunning} working` : aim.length}</span>
+          </button>
+          {aimOpen ? renderGroups(aimGroups) : null}
+        </div>
+      ) : null}
       {menu && menuChat ? (
         <div className="context-menu" ref={menuRef} style={{ left: menu.x, top: menu.y }} role="menu">
           <button

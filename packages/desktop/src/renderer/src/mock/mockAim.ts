@@ -504,6 +504,17 @@ export function installMockAim(): void {
       setTimeout(() => void api.sendMessage({ chatId: c.id, text: `Goal: ${g.title}. ${g.rationale}` }), 400);
       return { chatId: c.id };
     },
+    addGoal: async (input) => {
+      const now = Date.now();
+      const g: Goal = { id: `goal_${now}`, date: input.date ?? new Date().toISOString().slice(0, 10), title: input.title, rationale: input.rationale ?? '', status: 'planned', priority: input.priority ?? 2, effort: 'medium', origin: 'user', createdAt: now, updatedAt: now };
+      goals = [...goals, g];
+      emitGlobal({ type: 'goals.updated', goals });
+      return g;
+    },
+    deleteGoal: async (goalId) => {
+      goals = goals.filter((g) => g.id !== goalId);
+      emitGlobal({ type: 'goals.updated', goals });
+    },
     minimize: () => console.info('[mock] minimize'),
     maximize: () => console.info('[mock] maximize'),
     close: () => console.info('[mock] close'),

@@ -103,7 +103,7 @@ export function createMemoryTools(deps: MemoryToolDeps): Record<string, ToolImpl
     const priority = (p === 1 || p === 2 || p === 3 ? p : 2) as 1 | 2 | 3;
     const effort = args['effort'] === 'small' || args['effort'] === 'large' ? (args['effort'] as Goal['effort']) : 'medium';
     const now = Date.now();
-    const goal = g.upsert({ id: newId('goal'), date, title, rationale, status: 'planned', priority, effort, directiveId: typeof args['directiveId'] === 'string' ? (args['directiveId'] as string) : undefined, createdAt: now, updatedAt: now, scheduledAt: now });
+    const goal = g.upsert({ id: newId('goal'), date, title, rationale, status: 'planned', priority, effort, directiveId: typeof args['directiveId'] === 'string' ? (args['directiveId'] as string) : undefined, createdAt: now, updatedAt: now, scheduledAt: now, origin: 'aim' });
     deps.onGoalsChanged?.();
     return { ok: true, text: `Goal added for ${date}: "${goal.title}" (${goal.id}). A.I.M. will pursue it on its own.`, data: goal };
   };

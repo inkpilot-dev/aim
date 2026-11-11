@@ -110,3 +110,11 @@ Whenever A.I.M. stores something about you or about how your things work, a one-
 ## Independent goals
 
 Each time A.I.M. starts it makes sure today has a plan: if there is none it plans goals from your directives, memory and recent activity, and if planned goals are waiting it starts them. During a conversation A.I.M. can also commit to follow-ups itself (a goal for today or a later date) and record standing directives you state, then pursue them without being asked.
+
+## Your own goals
+
+Goals → Today has a form for adding a goal yourself: a title, optional details for A.I.M., a priority and a date. Goals for today start right away when "Auto-run goals" is on (Settings); goals for a later date appear under Upcoming and start on that day. Your goals are tagged "Yours", the ones A.I.M. planned are tagged "A.I.M.", and re-planning the day never removes yours. Hover a goal and click the bin to delete it; deleting a goal that is running stops it first.
+
+## Your chats and A.I.M.'s chats
+
+The sidebar lists the chats you started first. Chats A.I.M. started on its own, such as goal runs, are collected below them under "Started by A.I.M.", which you can collapse. Starring one of A.I.M.'s chats moves it up with yours.

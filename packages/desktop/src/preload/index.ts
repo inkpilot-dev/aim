@@ -47,6 +47,8 @@ const api: AimApi & { platform: NodeJS.Platform; versions: { electron: string; c
   listGoals: (opts) => ipcRenderer.invoke(IPC.goals_list, opts),
   planGoalsNow: () => ipcRenderer.invoke(IPC.goals_plan),
   runGoal: (goalId) => ipcRenderer.invoke(IPC.goals_run, goalId),
+  addGoal: (input) => ipcRenderer.invoke(IPC.goals_add, input),
+  deleteGoal: (goalId) => ipcRenderer.invoke(IPC.goals_delete, goalId),
   // window
   minimize: () => void ipcRenderer.invoke(IPC.window_minimize),
   maximize: () => void ipcRenderer.invoke(IPC.window_maximize),

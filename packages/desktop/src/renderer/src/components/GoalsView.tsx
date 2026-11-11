@@ -90,7 +90,12 @@ export function GoalsView() {
   const [newPrio, setNewPrio] = useState<Prio>(2);
   const [planning, setPlanning] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
+  const [goalTitle, setGoalTitle] = useState('');
+  const [goalDetails, setGoalDetails] = useState('');
+  const [goalPrio, setGoalPrio] = useState<Prio>(2);
   const today = toIsoDate(Date.now());
+  const [goalDate, setGoalDate] = useState(today);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -107,7 +112,83 @@ export function GoalsView() {
   }, [load, state.goalsVersion]);
 
   const todays = goals.filter((g) => g.date === today).sort((a, b) => a.priority - b.priority);
-  const historyDates = Array.from(new Set(goals.filter((g) => g.date !== today).map((g) => g.date))).sort((a, b) => (a < b ? 1 : -1));
+  const upcoming = goals.filter((g) => g.date > today).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.priority - b.priority));
+  const historyDates = Array.from(new Set(goals.filter((g) => g.date < today).map((g) => g.date))).sort((a, b) => (a < b ? 1 : -1));
+
+  const addGoal = async () => {
+    const title = goalTitle.trim();
+    if (!title) return;
+    try {
+      const g = await window.aim.addGoal({ title, rationale: goalDetails.trim() || undefined, date: goalDate || today, priority: goalPrio });
+      setGoals((l) => (l.some((x) => x.id === g.id) ? l : [...l, g]));
+      setGoalTitle('');
+      setGoalDetails('');
+      setGoalDate(today);
+      const startsNow = g.date === today && state.settings?.autoRunGoals;
+      toast('success', 'Goal added', startsNow ? 'A.I.M. will start on it now.' : g.date === today ? 'Use Run now to start it.' : `Scheduled for ${formatDayLabel(g.date)}.`);
+    } catch (e) {
+      toast('error', 'Could not add goal', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const deleteGoal = async (g: Goal) => {
+    setConfirmDelete(null);
+    setGoals((l) => l.filter((x) => x.id !== g.id));
+    try {
+      await window.aim.deleteGoal(g.id);
+    } catch (e) {
+      toast('error', 'Could not delete goal', e instanceof Error ? e.message : String(e));
+      void load();
+    }
+  };
+
+  const deleteButton = (g: Goal) =>
+    confirmDelete === g.id ? (
+      <>
+        <button className="btn sm danger" onClick={() => void deleteGoal(g)}>
+          <IconTrash size={12} /> {g.status === 'in_progress' ? 'Stop and delete' : 'Delete'}
+        </button>
+        <button className="icon-btn" onClick={() => setConfirmDelete(null)} aria-label="Cancel">
+          <IconX size={14} />
+        </button>
+      </>
+    ) : (
+      <button className="icon-btn g-del" onClick={() => setConfirmDelete(g.id)} aria-label="Delete goal" data-tip="Delete goal">
+        <IconTrash size={14} />
+      </button>
+    );
+
+  const originTag = (g: Goal) => <span className={`tag ${g.origin === 'user' ? '' : 'accent'}`}>{g.origin === 'user' ? 'Yours' : 'A.I.M.'}</span>;
+
+  const goalCard = (g: Goal) => (
+    <div key={g.id} className="goal-card">
+      <span className={`prio p${g.priority}`}>{g.priority}</span>
+      <div className="g-main">
+        <div className="g-title">{g.title}</div>
+        {g.rationale ? <div className="g-rationale">{g.rationale}</div> : null}
+        <div className="g-meta">
+          {originTag(g)}
+          <span className={`tag ${GOAL_TAG[g.status]}`}>{g.status.replace('_', ' ')}</span>
+          {g.date !== today ? <span className="tag">{formatDayLabel(g.date)}</span> : null}
+          {g.notes ? <span className="small faint truncate">{g.notes}</span> : null}
+        </div>
+      </div>
+      <div className="g-actions">
+        {g.date <= today && (g.status === 'planned' || g.status === 'deferred' || g.status === 'failed') ? (
+          <button className="btn sm" onClick={() => void runGoal(g)} disabled={running === g.id}>
+            {running === g.id ? <span className="spinner" /> : <IconPlay size={12} />}
+            Run now
+          </button>
+        ) : null}
+        {g.chatId ? (
+          <button className="btn sm ghost" onClick={() => selectChat(g.chatId!)}>
+            <IconChat size={12} /> Open chat
+          </button>
+        ) : null}
+        {deleteButton(g)}
+      </div>
+    </div>
+  );
 
   const addDirective = async () => {
     const t = newText.trim();
@@ -171,11 +252,61 @@ export function GoalsView() {
     <div className="view">
       <div className="view-inner">
         <h1 className="view-title">Goals</h1>
-        <p className="view-sub">Standing directives tell A.I.M. what to keep pursuing. Each morning it plans concrete goals from them.</p>
+        <p className="view-sub">Add your own goals, or let A.I.M. plan them from your directives each morning. It works through today's goals on its own.</p>
 
         <section className="section">
           <div className="section-head">
-            <span className="section-title">Directives</span>
+            <span className="section-title">Today</span>
+            <button className="btn sm" onClick={() => void planNow()} disabled={planning}>
+              {planning ? <span className="spinner" /> : <IconRefresh size={13} />}
+              {planning ? 'Planning…' : 'Let A.I.M. plan today'}
+            </button>
+          </div>
+          <div className="goal-form">
+            <input
+              className="input selectable goal-title-input"
+              placeholder="Add a goal, e.g. Apply to three internships"
+              value={goalTitle}
+              onChange={(e) => setGoalTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void addGoal();
+              }}
+              aria-label="Goal"
+            />
+            <input className="input selectable" placeholder="Details for A.I.M. (optional)" value={goalDetails} onChange={(e) => setGoalDetails(e.target.value)} aria-label="Goal details" />
+            <div className="row goal-form-row">
+              <PrioPicker value={goalPrio} onChange={setGoalPrio} />
+              <input className="input narrow date-input" type="date" min={today} value={goalDate} onChange={(e) => setGoalDate(e.target.value || today)} aria-label="Goal date" />
+              <span className="small faint grow">{goalDate === today ? (state.settings?.autoRunGoals ? 'Starts right away' : 'Today') : `Starts ${formatDayLabel(goalDate)}`}</span>
+              <button className="btn primary" onClick={() => void addGoal()} disabled={!goalTitle.trim()}>
+                <IconPlus size={14} /> Add goal
+              </button>
+            </div>
+          </div>
+          {plan && plan.date === today && plan.summary ? <div className="plan-summary">{plan.summary}</div> : null}
+          {todays.length ? (
+            todays.map(goalCard)
+          ) : (
+            <div className="empty">
+              {state.settings?.dailyGoalsEnabled
+                ? 'No goals for today yet. Add one above, or let A.I.M. plan the day.'
+                : 'Daily planning is turned off in Settings. Add goals above, or plan manually.'}
+            </div>
+          )}
+        </section>
+
+        {upcoming.length ? (
+          <section className="section">
+            <div className="section-head">
+              <span className="section-title">Upcoming</span>
+            </div>
+            {upcoming.map(goalCard)}
+          </section>
+        ) : null}
+
+        <section className="section">
+          <div className="section-head">
+            <span className="section-title">What A.I.M. keeps working toward</span>
             <span className="small faint">{directives.filter((d) => d.active).length} active</span>
           </div>
           {directives.length ? (
@@ -203,52 +334,6 @@ export function GoalsView() {
           </div>
         </section>
 
-        <section className="section">
-          <div className="section-head">
-            <span className="section-title">Today's plan</span>
-            <button className="btn" onClick={() => void planNow()} disabled={planning}>
-              {planning ? <span className="spinner" /> : <IconRefresh size={14} />}
-              {planning ? 'Planning…' : "Plan today's goals now"}
-            </button>
-          </div>
-          {plan && plan.date === today && plan.summary ? <div className="plan-summary">{plan.summary}</div> : null}
-          {todays.length ? (
-            todays.map((g) => (
-              <div key={g.id} className="goal-card">
-                <span className={`prio p${g.priority}`}>{g.priority}</span>
-                <div className="g-main">
-                  <div className="g-title">{g.title}</div>
-                  <div className="g-rationale">{g.rationale}</div>
-                  <div className="g-meta">
-                    <span className={`tag ${GOAL_TAG[g.status]}`}>{g.status.replace('_', ' ')}</span>
-                    <span className="tag">{g.effort}</span>
-                    {g.notes ? <span className="small faint truncate">{g.notes}</span> : null}
-                  </div>
-                </div>
-                <div className="g-actions">
-                  {g.status === 'planned' || g.status === 'deferred' || g.status === 'failed' ? (
-                    <button className="btn sm" onClick={() => void runGoal(g)} disabled={running === g.id}>
-                      {running === g.id ? <span className="spinner" /> : <IconPlay size={12} />}
-                      Run now
-                    </button>
-                  ) : null}
-                  {g.chatId ? (
-                    <button className="btn sm ghost" onClick={() => selectChat(g.chatId!)}>
-                      <IconChat size={12} /> Open chat
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="empty">
-              {state.settings?.dailyGoalsEnabled
-                ? `No goals planned for today yet. A.I.M. plans daily at ${state.settings.dailyGoalsTime}, or plan now.`
-                : 'Daily planning is turned off in Settings. You can still plan manually.'}
-            </div>
-          )}
-        </section>
-
         {historyDates.length ? (
           <section className="section">
             <div className="section-head">
@@ -271,6 +356,7 @@ export function GoalsView() {
                           <IconChat size={14} />
                         </button>
                       ) : null}
+                      {deleteButton(g)}
                     </div>
                   ))}
               </div>

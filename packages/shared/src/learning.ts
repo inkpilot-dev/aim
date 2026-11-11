@@ -60,6 +60,8 @@ export interface Goal {
   createdAt: number;
   updatedAt: number;
   scheduledAt?: number; // when the runner should start it
+  /** Who created the goal: the user (Goals page) or A.I.M. (daily planning, follow-ups). Missing = A.I.M. */
+  origin?: 'user' | 'aim';
 }
 
 export interface DailyPlan {

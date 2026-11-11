@@ -90,7 +90,7 @@ export class GoalPlanner {
       if (existing) {
         // Re-plan: retire goals that never started so they do not run twice.
         for (const g of existing.goals) {
-          if (g.status === 'planned') this.o.goals.update(g.id, { status: 'deferred', notes: 'Superseded by a new plan.' });
+          if (g.status === 'planned' && g.origin !== 'user') this.o.goals.update(g.id, { status: 'deferred', notes: 'Superseded by a new plan.' });
         }
       }
       this.o.goals.savePlan(plan);
@@ -136,6 +136,10 @@ export class GoalPlanner {
     lines.push(memoryDigest || '(no memories yet)');
     lines.push('', '## Observed behaviour');
     lines.push(behaviorDigest || '(no behaviour data yet)');
+    const userGoals = this.o.goals.list({ date }).filter((g) => g.origin === 'user' && g.status !== 'done');
+    lines.push('', '## Goals the user set for today (already scheduled; do not duplicate them)');
+    if (userGoals.length === 0) lines.push('(none)');
+    for (const g of userGoals) lines.push(`- [${g.status}] ${g.title}`);
     lines.push('', "## Yesterday's goals");
     if (yGoals.length === 0) lines.push('(none)');
     for (const g of yGoals) lines.push(`- [${g.status}] ${g.title}${g.notes ? ` — ${singleLine(g.notes)}` : ''}`);
@@ -175,6 +179,7 @@ export class GoalPlanner {
         title,
         rationale: asString(r.rationale).trim().slice(0, 1000),
         status: 'planned',
+        origin: 'aim',
         priority: normalizePriority(asNumber(r.priority, 2)),
         effort: normalizeEffort(r.effort),
         createdAt: nowDate.getTime(),

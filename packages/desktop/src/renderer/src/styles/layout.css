@@ -621,3 +621,39 @@
     display: none;
   }
 }
+
+/* "Started by A.I.M." section in the sidebar */
+.aim-section {
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.aim-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-align: left;
+}
+.aim-section-head:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.aim-section-head .faint {
+  margin-left: auto;
+  font-weight: 500;
+}
+.aim-section-head .chev {
+  transition: transform 120ms ease;
+  color: var(--text-faint);
+}
+.aim-section-head.open .chev {
+  transform: rotate(90deg);
+}

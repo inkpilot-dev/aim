@@ -138,6 +138,10 @@ export interface AimApi {
   deleteDirective(id: string): Promise<void>;
   listGoals(opts?: { date?: string; includeDone?: boolean }): Promise<Goal[]>;
   planGoalsNow(): Promise<DailyPlan>;
+  /** Create a goal yourself. Goals for today start right away when auto-run is on. */
+  addGoal(input: { title: string; rationale?: string; date?: string; priority?: 1 | 2 | 3 }): Promise<Goal>;
+  /** Delete a goal (stops it first when it is running). */
+  deleteGoal(goalId: string): Promise<void>;
   runGoal(goalId: string): Promise<{ chatId: string }>;
   // window
   minimize(): void;
@@ -182,6 +186,8 @@ export const IPC = {
   goals_list: 'aim:goals:list',
   goals_plan: 'aim:goals:plan',
   goals_run: 'aim:goals:run',
+  goals_add: 'aim:goals:add',
+  goals_delete: 'aim:goals:delete',
   window_minimize: 'aim:window:minimize',
   window_maximize: 'aim:window:maximize',
   window_close: 'aim:window:close',

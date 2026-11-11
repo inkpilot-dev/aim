@@ -3,7 +3,7 @@
  * (ChatStreamEvent → IPC.event_chat, GlobalEvent → IPC.event_global).
  */
 import { BrowserWindow, ipcMain, shell, type IpcMainInvokeEvent } from 'electron';
-import { IPC, type AimApi, type Attachment, type ChatStreamEvent, type GlobalEvent, type Settings } from '@aim/shared';
+import { IPC, type AimApi, type Attachment, type ChatStreamEvent, type GlobalEvent, type Settings, newId, todayISO } from '@aim/shared';
 import type { AppContext } from './context.js';
 import { orderedDisplays } from './tools/screen.js';
 
@@ -168,6 +168,47 @@ export function registerIpc(ctx: AppContext, hooks: IpcHooks = {}): () => void {
     emitGlobal({ type: 'goals.plan', plan });
     emitGlobal({ type: 'goals.updated', goals: learn().goals.list() });
     return plan;
+  });
+  handle(IPC.goals_add, (_e, input) => {
+    const i = (input && typeof input === 'object' ? input : {}) as { title?: unknown; rationale?: unknown; date?: unknown; priority?: unknown };
+    const title = typeof i.title === 'string' ? i.title.trim() : '';
+    if (!title) throw new Error('A goal needs a title.');
+    const today = todayISO();
+    const date = typeof i.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(i.date) ? i.date : today;
+    const p = Number(i.priority);
+    const now = Date.now();
+    const goal = learn().goals.upsert({
+      id: newId('goal'),
+      date,
+      title: title.slice(0, 300),
+      rationale: typeof i.rationale === 'string' ? i.rationale.trim().slice(0, 2000) : '',
+      status: 'planned',
+      priority: (p === 1 || p === 2 || p === 3 ? p : 2) as 1 | 2 | 3,
+      effort: 'medium',
+      origin: 'user',
+      createdAt: now,
+      updatedAt: now,
+      scheduledAt: now,
+    });
+    emitGlobal({ type: 'goals.updated', goals: learn().goals.list() });
+    // Today's goals start on their own (one at a time, after anything already running).
+    if (date === today && ctx.settings.get().autoRunGoals) {
+      void learn()
+        .goalRunner.runPending(today)
+        .then(() => emitGlobal({ type: 'goals.updated', goals: learn().goals.list() }))
+        .catch((err: Error) => log.warn(`running goals failed: ${err.message}`));
+    }
+    return goal;
+  });
+  handle(IPC.goals_delete, async (_e, goalId) => {
+    const id = str(goalId, 'goalId');
+    const goal = learn().goals.get(id);
+    if (!goal) return;
+    if (goal.status === 'in_progress' && goal.chatId && ctx.services?.chatService.isBusy(goal.chatId)) {
+      await ctx.services.chatService.stop(goal.chatId).catch(() => undefined);
+    }
+    learn().goals.remove(id);
+    emitGlobal({ type: 'goals.updated', goals: learn().goals.list() });
   });
   handle(IPC.goals_run, async (_e, goalId) => {
     const r = await learn().goalRunner.runGoal(str(goalId, 'goalId'));

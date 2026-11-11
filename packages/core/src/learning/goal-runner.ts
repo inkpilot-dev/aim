@@ -113,21 +113,23 @@ export class GoalRunner {
   }
 
   private async doRunPending(date: string): Promise<void> {
-    const planned = this.o.goals
-      .list({ date })
-      .filter((g) => g.status === 'planned')
-      .sort((a, b) => a.priority - b.priority || (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0));
-    this.log.info(`${planned.length} pending goals for ${date}`);
-    for (const g of planned) {
+    // Re-read after every goal so goals added while running (by the user or by A.I.M.) are picked up too.
+    const attempted = new Set<string>();
+    for (;;) {
       if (this.cancelRequested) break;
-      const fresh = this.o.goals.get(g.id);
-      if (!fresh || fresh.status !== 'planned') continue; // the user may have deferred it meanwhile
+      const next = this.o.goals
+        .list({ date })
+        .filter((g) => g.status === 'planned' && !attempted.has(g.id))
+        .sort((a, b) => a.priority - b.priority || (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0))[0];
+      if (!next) break;
+      attempted.add(next.id);
       try {
-        await this.runGoal(g.id);
+        await this.runGoal(next.id);
       } catch (e) {
-        this.log.error('goal run failed', g.id, errorMessage(e));
+        this.log.error('goal run failed', next.id, errorMessage(e));
       }
     }
+    this.log.info(`${attempted.size} goal(s) run for ${date}`);
   }
 
   // ─── internals ───
@@ -172,7 +174,7 @@ export class GoalRunner {
   buildMessage(goal: Goal): string {
     const directive = goal.directiveId && this.o.directives ? this.o.directives.get(goal.directiveId) : null;
     const lines = [
-      `This chat executes one of today's planned goals (goal id: ${goal.id}).`,
+      goal.origin === 'user' ? `This chat executes a goal the user set for you (goal id: ${goal.id}).` : `This chat executes one of today's planned goals (goal id: ${goal.id}).`,
       '',
       `## Goal`,
       goal.title,

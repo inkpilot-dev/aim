@@ -450,3 +450,37 @@
 .knows-list li + li {
   margin-top: 4px;
 }
+
+/* Goals: create form and delete */
+.goal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.goal-form .goal-title-input {
+  font-size: var(--fs-md);
+}
+.goal-form-row {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.goal-form .date-input {
+  width: 150px;
+  color-scheme: dark;
+}
+:root[data-theme='light'] .goal-form .date-input {
+  color-scheme: light;
+}
+.goal-card .g-del,
+.history-goal .g-del {
+  opacity: 0;
+}
+.goal-card:hover .g-del,
+.history-goal:hover .g-del,
+.g-del:focus-visible {
+  opacity: 1;
+}

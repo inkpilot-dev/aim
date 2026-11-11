@@ -55,7 +55,8 @@ export const LEARNING_SCHEMA_SQL: string[] = [
     notes TEXT,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    scheduled_at INTEGER
+    scheduled_at INTEGER,
+    origin TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_goals_date ON goals(date)`,
   `CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status)`,
