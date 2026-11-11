@@ -215,6 +215,7 @@ async function waitFor(pred, timeoutMs, what) {
   }
   throw new Error(`timed out waiting for ${what}`);
 }
+const EXT_VERSION = JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')).version;
 const evalIn = (tabId, code) => hub.call('ext.page.evaluate', { tabId, code }).then((r) => r.value);
 
 try {
@@ -249,13 +250,13 @@ try {
     assert.equal(hello.client, 'extension');
     assert.equal(hello.token, TOKEN);
     assert.ok(['chrome', 'chromium', 'edge'].includes(hello.browser), `browser ${hello.browser}`);
-    assert.match(hello.version, /ext\/0\.1\.0/);
+    assert.ok(hello.version.includes(`ext/${EXT_VERSION}`), hello.version);
     assert.equal(await swEval(() => globalThis.__aim.hub.state), 'connected');
   });
 
   await step('ext.status reports browser and counts', async () => {
     const s = await hub.call('ext.status', {});
-    assert.equal(s.extensionVersion, '0.1.0');
+    assert.equal(s.extensionVersion, EXT_VERSION);
     assert.ok(['chrome', 'chromium', 'edge'].includes(s.browser));
     assert.match(s.version, /^\d+/);
     assert.ok(s.windows >= 1 && s.tabs >= 1);
@@ -276,6 +277,22 @@ try {
     assert.equal(tab.title, 'A.I.M. Fixture Shop');
     const { tabs } = await hub.call('ext.tabs.list', {});
     assert.ok(tabs.some((t) => t.tabId === tabId && t.openedByAim));
+  });
+
+  await step('tabs A.I.M. opens are collected in the teal "A.I.M." tab group', async () => {
+    const { tabs } = await hub.call('ext.tabs.list', {});
+    const mine = tabs.find((t) => t.tabId === tabId);
+    assert.equal(mine.inAimGroup, true, `tab not in the A.I.M. group: ${JSON.stringify(mine)}`);
+    const group = await swEval((id) => chrome.tabGroups.get(id), mine.groupId);
+    assert.equal(group.title, 'A.I.M.');
+    assert.equal(group.color, 'cyan');
+    const { tab: second } = await hub.call('ext.tabs.create', { url: `${base}/second.html` });
+    assert.equal(second.groupId, mine.groupId, 'second tab should join the same group');
+    const groups = await swEval(() => chrome.tabGroups.query({ title: 'A.I.M.' }));
+    assert.equal(groups.length, 1, 'exactly one A.I.M. group per window');
+    await hub.call('ext.tabs.close', { tabId: second.tabId });
+    const userTabs = tabs.filter((t) => !t.openedByAim);
+    assert.ok(userTabs.every((t) => !t.inAimGroup), 'tabs A.I.M. did not open stay out of the group');
   });
 
   await step('ext.tabs.create to a checkout URL is blocked by policy', async () => {
@@ -564,7 +581,7 @@ try {
     await hub.waitForExtension(15_000);
     assert.ok(hub.hellos.length > hellosBefore);
     const s = await hub.call('ext.status', {});
-    assert.equal(s.extensionVersion, '0.1.0');
+    assert.equal(s.extensionVersion, EXT_VERSION);
   });
 } finally {
   console.log(`\n${passed} passed, ${failures} failed in ${Math.round((Date.now() - startedAt) / 1000)} s; keepalive pings seen: ${hub.pingsFromExtension}; hellos: ${hub.hellos.length}; events: ${hub.events.length}`);

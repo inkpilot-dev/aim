@@ -47,6 +47,14 @@ const configs = [
 
 function copyStatic() {
   const manifest = JSON.parse(readFileSync(join(here, 'manifest.json'), 'utf8'));
+  // The extension ships inside the desktop app and is versioned with it, so the app can tell when the
+  // extension running in the browser is older than the one it carries (and ask it to reload itself).
+  try {
+    const appVersion = JSON.parse(readFileSync(join(here, '..', 'desktop', 'package.json'), 'utf8')).version;
+    if (typeof appVersion === 'string' && /^\d+\.\d+\.\d+$/.test(appVersion)) manifest.version = appVersion;
+  } catch {
+    /* building the extension on its own: keep the manifest version */
+  }
   const strip = (p) => (typeof p === 'string' ? p.replace(/^dist\//, '') : p);
   manifest.background.service_worker = strip(manifest.background.service_worker);
   for (const cs of manifest.content_scripts ?? []) cs.js = cs.js.map(strip);

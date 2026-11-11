@@ -77,3 +77,11 @@ After loading the extension, click the puzzle-piece (Extensions) button in Edge'
 ## Seeing A.I.M. work
 
 While A.I.M. acts in a tab, a teal pointer labelled "A.I.M." appears on the page and moves to what it clicks or types into. It shows for every action in that tab, including reading, and fades a few seconds after the last one. It is only drawn in the tab you are looking at, so A.I.M. working in a background tab never puts a second cursor on your screen.
+
+## The "A.I.M." tab group
+
+Tabs A.I.M. opens are collected in a teal tab group named **A.I.M.** in your current window, so its work stays together and out of the way of your own tabs. A.I.M. reuses tabs in that group rather than opening new ones, and tabs it did not open are never moved into it. When A.I.M. works on the page you are on, that tab stays where it is. Collapse the group to hide A.I.M.'s tabs; close the group to close them.
+
+## Extension updates
+
+The extension is versioned with the app. When the app updates itself and the extension running in the browser is older than the one the app carries, A.I.M. asks the extension to reload itself from disk, and a notice confirms the new version. The first update after installing version 0.1.6 or later needs one manual reload (edge://extensions → reload arrow on A.I.M. Browser Bridge); later updates apply automatically. If A.I.M. reports that the extension "is loaded from an old folder", remove it and load it again from the folder shown in Settings → Browser extension.

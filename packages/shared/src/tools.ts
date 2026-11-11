@@ -167,7 +167,7 @@ export const AIM_TOOLS: ToolDefinition[] = [
   {
     name: 'browser_open_tab',
     category: 'browser',
-    description: 'Open a URL in a NEW TAB of the existing browser window (background by default). Use only for research that must not disturb the page the user is on, or when the task truly needs a separate page; otherwise work in the user\'s current tab (browser_tabs → active). Returns the tabId.',
+    description: 'Open a URL in a NEW TAB of the existing browser window (background by default). Use only for research that must not disturb the page the user is on, or when the task truly needs a separate page; otherwise work in the user\'s current tab (browser_tabs → active). The tab is placed in the browser\'s "A.I.M." tab group; reuse a tab already in that group instead of opening another. Returns the tabId.',
     inputSchema: obj({ url: str('http(s) URL'), active: bool('focus the tab (default false — stay out of the user\'s way)'), windowId: int('target window; default = last focused') }, ['url']),
   },
   {

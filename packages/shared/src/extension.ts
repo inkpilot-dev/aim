@@ -18,7 +18,15 @@ export interface ExtTabInfo {
   status?: 'loading' | 'complete' | string;
   /** True when AIM opened this tab (tracked by the extension). */
   openedByAim?: boolean;
+  /** True when the tab sits in the browser's "A.I.M." tab group. */
+  inAimGroup?: boolean;
+  /** Browser tab group id, when the tab is in any group. */
+  groupId?: number;
 }
+
+/** Tabs A.I.M. opens are collected in a browser tab group with this title and colour. */
+export const AIM_TAB_GROUP_TITLE = 'A.I.M.';
+export const AIM_TAB_GROUP_COLOR = 'cyan';
 
 export interface ExtSnapshotElement {
   ref: string; // "e12" — stable for the lifetime of the page
@@ -69,6 +77,8 @@ export type ExtMethodMap = {
   'ext.cursor.show': { params: { tabId: number; x?: number; y?: number }; result: { ok: true } };
   'ext.cursor.hide': { params: { tabId: number }; result: { ok: true } };
   'ext.cursor.move': { params: { tabId: number; x: number; y: number; durationMs?: number }; result: { ok: true } };
+  /** Reload the extension from disk (sent by the app when it ships a newer extension than the one running). */
+  'ext.reload': { params: { reason?: string }; result: { ok: true; version: string } };
 };
 
 export type ExtMethod = keyof ExtMethodMap;

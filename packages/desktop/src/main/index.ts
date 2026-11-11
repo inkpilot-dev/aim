@@ -12,6 +12,7 @@ import { ActiveWindowProvider } from './active-window.js';
 import { consoleLogger, type AppContext, type AppPaths, type CoreServices } from './context.js';
 import { HealthMonitor } from './health.js';
 import { UpdateService, readBuiltInRepo } from './updater.js';
+import { extensionSyncAction, parseExtensionVersion, readBundledExtensionVersion } from './extension-sync.js';
 import { HubServer } from './hub/hub-server.js';
 import { emitChat, emitGlobal, registerIpc, toast } from './ipc.js';
 import { buildMcpConfig } from './mcp-config.js';
@@ -367,12 +368,40 @@ function wireEvents(ctx: AppContext, tray: AppTray): void {
     emitGlobal({ type: 'goals.updated', goals: services.goals.list() });
     toast('success', "Today's goals are planned", plan.summary);
   });
-  hub.on('extension', (st: { connected: boolean; browser?: string }) => {
+  const extReloadRequested = new Set<string>();
+  const extStaleWarned = new Set<string>();
+  let extReloading = false;
+  hub.on('extension', (st: { connected: boolean; browser?: string; version?: string }) => {
     ctx.health
       ?.get()
       .then((h) => emitGlobal({ type: 'health', health: h }))
       .catch(() => undefined);
-    toast(st.connected ? 'success' : 'warning', st.connected ? `Browser extension connected${st.browser ? ` (${st.browser})` : ''}` : 'Browser extension disconnected');
+    // A disconnect caused by our own reload request is expected; stay quiet about it.
+    if (!st.connected && extReloading) return;
+    if (st.connected && extReloading) {
+      extReloading = false;
+      toast('success', 'Browser extension updated', `Running version ${parseExtensionVersion(st.version) ?? ''}.`.trim());
+    } else {
+      toast(st.connected ? 'success' : 'warning', st.connected ? `Browser extension connected${st.browser ? ` (${st.browser})` : ''}` : 'Browser extension disconnected');
+    }
+    if (!st.connected) return;
+    const running = parseExtensionVersion(st.version);
+    const bundled = readBundledExtensionVersion(path.join(ctx.paths.extensionDir, 'manifest.json'), (p) => fs.readFileSync(p, 'utf8'));
+    const action = extensionSyncAction(running, bundled, extReloadRequested);
+    if (action === 'reload' && running) {
+      extReloadRequested.add(running);
+      extReloading = true;
+      log.info(`extension ${running} is older than bundled ${bundled}; asking it to reload`);
+      hub.extCall('ext.reload', { reason: `update to ${bundled}` }, 5_000).catch((err: Error & { code?: number }) => {
+        extReloading = false;
+        if (err.code === -32601) {
+          toast('info', 'Reload the A.I.M. extension once', 'Open edge://extensions and click the reload arrow on A.I.M. Browser Bridge. Later updates apply automatically.');
+        } else log.warn(`extension reload request failed: ${err.message}`);
+      });
+    } else if (action === 'stale-folder' && running && !extStaleWarned.has(running)) {
+      extStaleWarned.add(running);
+      toast('warning', 'Browser extension is loaded from an old folder', `Remove it in edge://extensions and load it again from ${ctx.paths.extensionDir} (Settings → Browser extension → Open folder).`);
+    }
   });
   hub.on('ext.event', (ev: ExtEvent) => {
     if (ev.type === 'user.activity' && services && !ctx.observerPaused && ctx.settings.get().observerEnabled) {

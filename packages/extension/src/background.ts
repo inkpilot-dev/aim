@@ -29,8 +29,7 @@ import {
   type HubHelloResult,
   type RpcId,
   type RpcMessage,
-  type RpcRequest,
-} from '@aim/shared';
+  type RpcRequest, AIM_TAB_GROUP_TITLE, AIM_TAB_GROUP_COLOR } from '@aim/shared';
 import {
   PAGE_METHODS,
   SESSION_KEYS,
@@ -449,6 +448,54 @@ function emit(event: ExtEvent): void {
 // Tab helpers
 // ---------------------------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------
+// The "A.I.M." tab group: every tab A.I.M. opens is collected there, one group per window.
+// ---------------------------------------------------------------------------------------------
+
+const aimGroupIds = new Set<number>();
+let groupQueue: Promise<unknown> = Promise.resolve();
+
+function tabGroupsAvailable(): boolean {
+  return typeof chrome.tabGroups?.query === 'function' && typeof chrome.tabs.group === 'function';
+}
+
+async function refreshAimGroups(): Promise<void> {
+  if (!tabGroupsAvailable()) return;
+  try {
+    const groups = await chrome.tabGroups.query({ title: AIM_TAB_GROUP_TITLE });
+    aimGroupIds.clear();
+    for (const g of groups) aimGroupIds.add(g.id);
+  } catch {
+    /* keep the last known set */
+  }
+}
+
+/** Moves a tab into this window's "A.I.M." group, creating the group when needed. Never throws. */
+function addToAimGroup(tabId: number, windowId: number): Promise<number | undefined> {
+  // Serialised so two tabs opened at once end up in one group rather than two.
+  const run = async (): Promise<number | undefined> => {
+    if (!tabGroupsAvailable()) return undefined;
+    try {
+      const existing = (await chrome.tabGroups.query({ windowId, title: AIM_TAB_GROUP_TITLE }))[0];
+      if (existing) {
+        await chrome.tabs.group({ groupId: existing.id, tabIds: [tabId] });
+        aimGroupIds.add(existing.id);
+        return existing.id;
+      }
+      const groupId = await chrome.tabs.group({ tabIds: [tabId], createProperties: { windowId } });
+      await chrome.tabGroups.update(groupId, { title: AIM_TAB_GROUP_TITLE, color: AIM_TAB_GROUP_COLOR, collapsed: false });
+      aimGroupIds.add(groupId);
+      return groupId;
+    } catch (e) {
+      console.warn('[aim] could not place tab in the A.I.M. group:', errorMessage(e));
+      return undefined;
+    }
+  };
+  const p = groupQueue.then(run, run);
+  groupQueue = p.catch(() => undefined);
+  return p;
+}
+
 function toTabInfo(tab: chrome.tabs.Tab): ExtTabInfo {
   const info: ExtTabInfo = {
     tabId: tab.id ?? -1,
@@ -461,6 +508,11 @@ function toTabInfo(tab: chrome.tabs.Tab): ExtTabInfo {
   };
   if (tab.audible) info.audible = true;
   if (tab.id !== undefined && aimTabs.has(tab.id)) info.openedByAim = true;
+  const groupId = (tab as { groupId?: number }).groupId;
+  if (typeof groupId === 'number' && groupId >= 0) {
+    info.groupId = groupId;
+    if (aimGroupIds.has(groupId)) info.inAimGroup = true;
+  }
   return info;
 }
 
@@ -688,6 +740,7 @@ const handlers: Handlers = {
 
   async 'ext.tabs.list'() {
     await loadAimTabs();
+    await refreshAimGroups();
     const tabs = await chrome.tabs.query({});
     return { tabs: tabs.filter((t) => t.id !== undefined).map(toTabInfo) };
   },
@@ -712,6 +765,7 @@ const handlers: Handlers = {
     if (newTabId !== undefined) {
       aimTabs.add(newTabId);
       void persistAimTabs();
+      await addToAimGroup(newTabId, tab.windowId);
       try {
         tab = await waitForTabComplete(newTabId, CREATE_LOAD_WAIT_MS);
       } catch {
@@ -904,6 +958,19 @@ const handlers: Handlers = {
   },
   async 'ext.cursor.move'(params) {
     return callContent(requireTabId(params), 'ext.cursor.move', params);
+  },
+
+  async 'ext.reload'() {
+    // Answer first, then reload from disk. For an unpacked extension this picks up the newer files the
+    // A.I.M. app installed during its own update; the worker reconnects to the hub on start.
+    setTimeout(() => {
+      try {
+        chrome.runtime.reload();
+      } catch (e) {
+        console.warn('[aim] reload failed:', errorMessage(e));
+      }
+    }, 400);
+    return { ok: true as const, version: EXTENSION_VERSION };
   },
 };
 

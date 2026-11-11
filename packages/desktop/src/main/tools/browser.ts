@@ -84,7 +84,7 @@ function tabIdOf(args: Record<string, unknown>): number | null {
 }
 
 function tabLine(t: ExtTabInfo): string {
-  return `${t.active ? '* ' : '  '}tab ${t.tabId} (window ${t.windowId}) "${t.title}" ${t.url}${t.audible ? ' [audible]' : ''}${t.openedByAim ? ' [opened by AIM]' : ''}`;
+  return `${t.active ? '* ' : '  '}tab ${t.tabId} (window ${t.windowId}) "${t.title}" ${t.url}${t.audible ? ' [audible]' : ''}${t.inAimGroup ? ' [A.I.M. group]' : t.openedByAim ? ' [opened by AIM]' : ''}`;
 }
 
 export function createBrowserTools(deps: BrowserToolDeps): { impls: Record<string, ToolImpl>; policy: PolicyContext; cache: SnapshotCache } {
@@ -143,7 +143,7 @@ export function createBrowserTools(deps: BrowserToolDeps): { impls: Record<strin
       const url = String(args['url'] ?? '');
       if (!/^https?:\/\//i.test(url) && !/^(about|chrome|edge|file):/i.test(url)) return { ok: false, error: 'url must be an http(s) URL.' };
       const r = await hub.extCall('ext.tabs.create', { url, active: args['active'] === true, windowId: typeof args['windowId'] === 'number' ? (args['windowId'] as number) : undefined }, 20_000);
-      return { ok: true, text: `Opened tab ${r.tab.tabId} (${args['active'] === true ? 'active' : 'background'}): ${r.tab.url || url}`, data: r.tab };
+      return { ok: true, text: `Opened tab ${r.tab.tabId} (${args['active'] === true ? 'active' : 'background'}${r.tab.inAimGroup ? ', in the A.I.M. tab group' : ''}): ${r.tab.url || url}`, data: r.tab };
     }, false),
 
     browser_navigate: ext(async (args, tabId) => {
