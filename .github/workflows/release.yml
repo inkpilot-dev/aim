@@ -1,14 +1,16 @@
 name: Release
 
-# Publishes installers and auto-update metadata to GitHub Releases whenever a version tag is pushed.
-# Create one with: scripts/release.sh 0.2.0   (or scripts/release.ps1 0.2.0)
-# The tag must match the version in packages/desktop/package.json.
+# Builds the installers and publishes them, with the auto-update metadata, to a GitHub Release.
+# Triggered by pushing a version tag (scripts/release.sh 0.2.0) or manually from a branch.
+#
+# Order matters: one job creates the release as a DRAFT, the build jobs upload into it, and the
+# release is published only after every file is attached. Installed copies of A.I.M. therefore never
+# see a release whose update metadata (latest.yml) is missing, and the build jobs cannot race each
+# other to create the release.
 
 on:
   push:
     tags: ["v*.*.*"]
-  # Manual re-run from a branch: electron-builder creates (or completes) the release named after
-  # packages/desktop/package.json's version.
   workflow_dispatch:
 
 permissions:
@@ -19,13 +21,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  prepare:
+    name: Create draft release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: v
+        name: Read version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./packages/desktop/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/* && "${GITHUB_REF_NAME}" != "v$VERSION" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match packages/desktop version $VERSION"; exit 1
+          fi
+
+      - name: Create the release as a draft (once)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG=${{ steps.v.outputs.tag }}
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; the build jobs will add or replace its files."
+          else
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
+              --title "${{ steps.v.outputs.version }}" --notes "A.I.M. ${{ steps.v.outputs.version }}"
+          fi
+
   windows:
-    name: Windows installer (publish)
+    name: Windows installer
+    needs: prepare
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -37,34 +71,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify tag matches package version
-        if: startsWith(github.ref, 'refs/tags/')
-        shell: bash
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          PKG=$(node -p "require('./packages/desktop/package.json').version")
-          if [ "$TAG" != "$PKG" ]; then echo "Tag v$TAG does not match packages/desktop version $PKG"; exit 1; fi
-
       - name: Generate icons
         run: node scripts/generate-icons.mjs
 
       - name: Build workspace
         run: pnpm build
 
-      # Tests run in the Build workflow on every push; the publish job only packages.
-      - name: Package and publish (NSIS + portable + latest.yml)
-        run: pnpm --filter @aim/desktop exec electron-builder --win --publish always
+      # Tests run in the Build workflow on every push; this job only packages.
+      - name: Package (NSIS + portable + latest.yml)
+        run: pnpm --filter @aim/desktop exec electron-builder --win --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          cd packages/desktop/release
+          V=${{ needs.prepare.outputs.version }}
+          gh release upload "${{ needs.prepare.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --clobber \
+            "AIM-Setup-$V.exe" "AIM-Setup-$V.exe.blockmap" "AIM-Portable-$V.exe" latest.yml
+
   linux:
-    name: Linux AppImage (publish)
+    name: Linux AppImage
+    needs: prepare
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -85,7 +119,23 @@ jobs:
       - name: Build workspace
         run: pnpm build
 
-      - name: Package and publish (AppImage + latest-linux.yml)
-        run: pnpm --filter @aim/desktop exec electron-builder --linux AppImage --publish always
+      - name: Package (AppImage + latest-linux.yml)
+        run: pnpm --filter @aim/desktop exec electron-builder --linux AppImage --publish never
+
+      - name: Upload to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd packages/desktop/release
+          gh release upload "${{ needs.prepare.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --clobber \
+            "AIM-${{ needs.prepare.outputs.version }}-x86_64.AppImage" latest-linux.yml
+
+  publish:
+    name: Publish release
+    needs: [prepare, windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish (installed copies pick it up from here)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ needs.prepare.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --draft=false --latest
