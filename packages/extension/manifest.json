@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "A.I.M. Browser Bridge",
   "description": "Lets the A.I.M. desktop agent (Artificial Intelligence Management) work in background browser tabs. Connects only to the A.I.M. app on this computer (127.0.0.1).",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "minimum_chrome_version": "116",
   "icons": {
     "16": "icons/icon16.png",

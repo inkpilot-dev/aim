@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
  * Text that is already complete on mount (a loaded chat) is shown at once.
  */
 export function useSmoothText(target: string): string {
+  target = typeof target === 'string' ? target : '';
   const [shown, setShown] = useState(target);
   const shownRef = useRef(target);
 

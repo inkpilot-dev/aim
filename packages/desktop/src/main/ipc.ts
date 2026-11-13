@@ -70,7 +70,10 @@ export function registerIpc(ctx: AppContext, hooks: IpcHooks = {}): () => void {
 
   // chats
   handle(IPC.chats_list, () => svc().listChats());
-  handle(IPC.chats_get, (_e, id) => svc().getChat(str(id, 'chatId')));
+  handle(IPC.chats_get, (_e, id) => {
+    const chat = svc().getChat(str(id, 'chatId'));
+    return chat ? limitChatImages(chat) : chat;
+  });
   handle(IPC.chats_create, (_e, input) => {
     const i = (input && typeof input === 'object' ? input : {}) as Parameters<AimApi['createChat']>[0];
     const cwd = i?.cwd || ctx.settings.get().defaultCwd || undefined;
@@ -238,4 +241,36 @@ export function registerIpc(ctx: AppContext, hooks: IpcHooks = {}): () => void {
   return () => {
     for (const c of channels) ipcMain.removeHandler(c);
   };
+}
+
+/**
+ * Long agent chats can hold dozens of screenshots. Sending all of them to the interface at once can
+ * exhaust the renderer's memory (a blank window), so only the newest images up to a byte budget are
+ * sent; older tool thumbnails are dropped and older attached images become a short note. The database
+ * keeps everything.
+ */
+export const CHAT_IMAGE_BUDGET_BYTES = 12 * 1024 * 1024;
+export function limitChatImages<T extends { messages: { content: unknown[] }[] }>(chat: T, budget = CHAT_IMAGE_BUDGET_BYTES): T {
+  let used = 0;
+  const messages = chat.messages.map((m) => ({ ...m, content: [...m.content] }));
+  for (let mi = messages.length - 1; mi >= 0; mi--) {
+    const content = messages[mi]!.content as Record<string, unknown>[];
+    for (let bi = content.length - 1; bi >= 0; bi--) {
+      const b = content[bi];
+      if (!b || typeof b !== 'object') continue;
+      if (b['type'] === 'image' && typeof b['dataBase64'] === 'string') {
+        const size = (b['dataBase64'] as string).length;
+        if (used + size > budget) content[bi] = { type: 'status', text: 'Older image not shown to keep A.I.M. responsive.' };
+        else used += size;
+      } else if (b['type'] === 'tool_use') {
+        const result = b['result'] as Record<string, unknown> | undefined;
+        const img = result?.['imageBase64'];
+        if (typeof img === 'string') {
+          if (used + img.length > budget) content[bi] = { ...b, result: { ...result, imageBase64: undefined } };
+          else used += img.length;
+        }
+      }
+    }
+  }
+  return { ...chat, messages } as T;
 }

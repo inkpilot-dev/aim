@@ -134,7 +134,9 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export const MessageItem = memo(function MessageItem({ message, agents, showThinking, activityMode, streaming }: Props) {
+export const MessageItem = memo(function MessageItem({ message: raw, agents, showThinking, activityMode, streaming }: Props) {
+  // Messages from older versions or interrupted turns may carry malformed content; render what is valid.
+  const message: Message = { ...raw, content: (Array.isArray(raw.content) ? raw.content : []).filter((b): b is ContentBlock => !!b && typeof b === 'object' && typeof (b as { type?: unknown }).type === 'string') };
   const showActivity = activityMode === 'show';
   const { state } = useStore();
   const agentName = (id?: string) => (id ? agents.find((a) => a.id === id)?.name : undefined);

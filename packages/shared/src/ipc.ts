@@ -193,6 +193,9 @@ export const IPC = {
   window_close: 'aim:window:close',
   shell_openExternal: 'aim:shell:openExternal',
   shell_openPath: 'aim:shell:openPath',
+  // renderer → main (send): health signals for the startup watchdog and error log
+  renderer_ready: 'aim:renderer:ready',
+  renderer_error: 'aim:renderer:error',
   // main → renderer (send)
   event_chat: 'aim:event:chat',
   event_global: 'aim:event:global',

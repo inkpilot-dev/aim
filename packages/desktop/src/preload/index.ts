@@ -11,7 +11,12 @@ function subscribe<T>(channel: string, cb: (e: T) => void): () => void {
   return () => ipcRenderer.removeListener(channel, listener);
 }
 
-const api: AimApi & { platform: NodeJS.Platform; versions: { electron: string; chrome: string; node: string } } = {
+const api: AimApi & {
+  platform: NodeJS.Platform;
+  versions: { electron: string; chrome: string; node: string };
+  rendererReady: () => void;
+  reportError: (text: string) => void;
+} = {
   // chats
   listChats: () => ipcRenderer.invoke(IPC.chats_list),
   getChat: (chatId) => ipcRenderer.invoke(IPC.chats_get, chatId),
@@ -59,6 +64,8 @@ const api: AimApi & { platform: NodeJS.Platform; versions: { electron: string; c
   onChatEvent: (cb) => subscribe<ChatStreamEvent>(IPC.event_chat, cb),
   onGlobalEvent: (cb) => subscribe<GlobalEvent>(IPC.event_global, cb),
   // extras
+  rendererReady: () => ipcRenderer.send(IPC.renderer_ready),
+  reportError: (text) => ipcRenderer.send(IPC.renderer_error, String(text).slice(0, 4000)),
   platform: process.platform,
   versions: { electron: process.versions.electron ?? '', chrome: process.versions.chrome ?? '', node: process.versions.node ?? '' },
 };

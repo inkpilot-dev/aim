@@ -5,8 +5,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { BrowserWindow, app, dialog, globalShortcut } from 'electron';
-import { APP_ID, APP_NAME, OBSERVER_SAMPLE_MS, type ChatStreamEvent, type DailyPlan, type ExtEvent, type Settings } from '@aim/shared';
+import { BrowserWindow, app, dialog, globalShortcut, ipcMain, shell } from 'electron';
+import { APP_ID, APP_NAME, IPC, OBSERVER_SAMPLE_MS, type ChatStreamEvent, type DailyPlan, type ExtEvent, type Settings } from '@aim/shared';
 import type * as Core from '@aim/core';
 import { ActiveWindowProvider } from './active-window.js';
 import { consoleLogger, type AppContext, type AppPaths, type CoreServices } from './context.js';
@@ -85,6 +85,28 @@ async function main(): Promise<void> {
   // from package.json's name, which would scatter data under "@aim/desktop" or "Electron" during development).
   const userDataOverride = process.env['AIM_USER_DATA'];
   app.setPath('userData', userDataOverride && userDataOverride.length > 0 ? userDataOverride : path.join(app.getPath('appData'), APP_NAME));
+  // Software rendering, chosen from the recovery screen or switched on after repeated graphics crashes.
+  // Must be decided before the app is ready.
+  const softwareFlag = path.join(app.getPath('userData'), 'disable-gpu');
+  const softwareRendering = fs.existsSync(softwareFlag) || process.env['AIM_DISABLE_GPU'] === '1';
+  if (softwareRendering) app.disableHardwareAcceleration();
+  const gpuCrashes: number[] = [];
+  app.on('child-process-gone', (_e, details) => {
+    if (details.type !== 'GPU' || softwareRendering) return;
+    const now = Date.now();
+    gpuCrashes.push(now);
+    while (gpuCrashes.length && now - gpuCrashes[0]! > 60_000) gpuCrashes.shift();
+    console.warn(`[main] GPU process gone (${details.reason}); ${gpuCrashes.length} in the last minute`);
+    if (gpuCrashes.length >= 3) {
+      try {
+        fs.writeFileSync(softwareFlag, `GPU process crashed repeatedly (${details.reason}) at ${new Date().toISOString()}\n`);
+      } catch {
+        /* cannot persist; still relaunch */
+      }
+      app.relaunch({ args: process.argv.slice(1) });
+      app.exit(0);
+    }
+  });
   await app.whenReady();
 
   const paths = computePaths();
@@ -122,7 +144,34 @@ async function main(): Promise<void> {
   const preloadPath = path.join(__dirname, '../preload/index.js');
   const rendererDir = path.join(__dirname, '../renderer');
   const iconPath = [path.join(paths.assets, 'icons', process.platform === 'win32' ? 'icon.ico' : 'icon.png'), path.join(paths.assets, 'icons', 'icon-256.png')].find((p) => fs.existsSync(p));
-  const mainWindow = new MainWindow({ preloadPath, rendererDir, iconPath, startMinimized: settings.get().startMinimized, log: log.child('window') });
+  const mainWindow = new MainWindow({
+    preloadPath,
+    rendererDir,
+    iconPath,
+    startMinimized: settings.get().startMinimized,
+    log: log.child('window'),
+    logsDir: paths.logs,
+    softwareRendering,
+    onRecoveryAction: (action) => {
+      if (action === 'logs') void shell.openPath(paths.logs);
+      else if (action === 'quit') {
+        mainWindow.setQuitting(true);
+        app.quit();
+      } else if (action === 'software') {
+        try {
+          fs.writeFileSync(softwareFlag, `Chosen from the recovery screen at ${new Date().toISOString()}\n`);
+        } catch (err) {
+          log.warn(`could not write ${softwareFlag}: ${(err as Error).message}`);
+        }
+        mainWindow.setQuitting(true);
+        app.relaunch({ args: process.argv.slice(1) });
+        app.exit(0);
+      }
+    },
+  });
+  ipcMain.on(IPC.renderer_ready, () => mainWindow.guard.ready());
+  ipcMain.on(IPC.renderer_error, (_e, text: unknown) => mainWindow.guard.recordError(typeof text === 'string' ? text : JSON.stringify(text)));
+  if (softwareRendering) log.info('hardware acceleration is off (software rendering)');
 
   const ctx: AppContext = { paths, settings, hub, overlay, mainWindow, activeWindow, core, services: null, router: null, health: null, updater: null, observerPaused: false, log };
 

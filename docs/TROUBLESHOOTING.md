@@ -98,3 +98,14 @@ pnpm 10 and newer block package install scripts unless they are approved, so the
 ## Repeated "Tool search" calls or a reply shown twice
 
 Fixed in 0.1.3. A.I.M. now loads every tool up front (`ENABLE_TOOL_SEARCH=false` for the CLI process), so the model no longer has to call ToolSearch before using a tool, and streamed replies are merged by block identity so text and tool calls appear exactly once.
+
+## Blank or black window
+
+Since 0.1.8 A.I.M. watches its own window. If the interface crashes, hangs, or fails to finish starting, it reloads it; if that fails it reloads in safe mode (saved interface state such as the last open chat is cleared; chats, goals and memory are not touched); if that fails too it shows a recovery screen with the error and these options:
+
+- **Try again** reloads the interface.
+- **Reset the interface and try again** clears the interface's saved state and cache.
+- **Restart without graphics acceleration** switches to software rendering, which avoids graphics-driver problems. A.I.M. also does this by itself if the graphics process crashes three times within a minute. To switch back, delete the file `disable-gpu` in `%APPDATA%\A.I.M\` and restart.
+- **Open the logs folder** shows `aim.log`, which records what went wrong, including errors from the interface.
+
+Problems inside one page or one message are contained there: that part shows a short notice and the rest of A.I.M. keeps working.

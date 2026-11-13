@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { ChatWithMessages } from '@aim/shared';
 import type { Notice, PendingQuestion } from '../state/reducer';
 import { MessageItem } from './MessageItem';
+import { ErrorBoundary } from './ErrorBoundary';
 import { AskUserCard } from './AskUserCard';
 import { IconAlert, IconArrowDown, IconWrench } from './Icons';
 
@@ -60,6 +61,7 @@ export function MessageList({ chat, questions, notices, showThinking, activityMo
       <div className="message-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="message-col">
           {chat.messages.map((m, i) => (
+            <ErrorBoundary key={m.id} scope="message">
             <MessageItem
               key={m.id}
               message={m}
@@ -68,6 +70,7 @@ export function MessageList({ chat, questions, notices, showThinking, activityMo
               activityMode={activityMode}
               streaming={streaming && i === chat.messages.length - 1 && m.role === 'assistant'}
             />
+            </ErrorBoundary>
           ))}
           {notices.map((n) => (
             <div key={n.id} className={`inline-notice ${n.kind === 'error' ? 'error' : n.kind === 'self_heal' ? 'warning' : ''}`}>
